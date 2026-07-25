@@ -13,6 +13,7 @@ import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Image;
 import java.util.List;
 
 public class LaporanForm extends JFrame {
@@ -36,6 +37,10 @@ public class LaporanForm extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(900, 480);
         setLocationRelativeTo(null);
+        Image icon = AppIcon.windowIcon();
+        if (icon != null) {
+            setIconImage(icon);
+        }
         initUI();
         muatData();
     }

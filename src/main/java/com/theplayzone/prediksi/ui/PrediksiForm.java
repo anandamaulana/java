@@ -21,6 +21,7 @@ import javax.swing.SpinnerNumberModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Image;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.Locale;
@@ -50,6 +51,10 @@ public class PrediksiForm extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(820, 620);
         setLocationRelativeTo(null);
+        Image icon = AppIcon.windowIcon();
+        if (icon != null) {
+            setIconImage(icon);
+        }
 
         int tahunSekarang = LocalDate.now().getYear();
         spnTahun = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
@@ -73,6 +78,7 @@ public class PrediksiForm extends JFrame {
         form.add(spnTahun);
 
         JButton btnProses = new JButton("Proses Prediksi");
+        AppTheme.terapkanTombolUtama(btnProses);
         btnProses.addActionListener(e -> prosesPrediksi());
         form.add(btnProses);
 

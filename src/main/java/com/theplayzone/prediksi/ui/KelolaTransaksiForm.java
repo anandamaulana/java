@@ -17,6 +17,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -43,6 +44,10 @@ public class KelolaTransaksiForm extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(720, 480);
         setLocationRelativeTo(null);
+        Image icon = AppIcon.windowIcon();
+        if (icon != null) {
+            setIconImage(icon);
+        }
         initUI();
         muatData();
     }
@@ -68,6 +73,7 @@ public class KelolaTransaksiForm extends JFrame {
         form.add(cmbMetode);
 
         JButton btnTambah = new JButton("Tambah");
+        AppTheme.terapkanTombolUtama(btnTambah);
         btnTambah.addActionListener(e -> tambahData());
         JButton btnHapus = new JButton("Hapus Terpilih");
         btnHapus.addActionListener(e -> hapusData());

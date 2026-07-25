@@ -17,6 +17,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -35,6 +36,10 @@ public class ImportDataForm extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(580, 460);
         setLocationRelativeTo(null);
+        Image icon = AppIcon.windowIcon();
+        if (icon != null) {
+            setIconImage(icon);
+        }
         initUI();
     }
 
@@ -59,6 +64,7 @@ public class ImportDataForm extends JFrame {
         top.add(lblFile);
 
         JButton btnImport = new JButton("Import ke Database");
+        AppTheme.terapkanTombolUtama(btnImport);
         btnImport.addActionListener(e -> doImport());
 
         JButton btnRekap = new JButton("Rekap ke Omzet Bulanan");
