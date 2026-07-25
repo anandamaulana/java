@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pemodelan Perangkat Lunak — Prediksi Omzet The Play Zone</title>
+<style>
+  :root {
+    --bg: #faf8f3;
+    --surface: #ffffff;
+    --ink: #1a1a1a;
+    --ink-muted: #726c5e;
+    --ink-faint: #a39d8c;
+    --accent: #f7b118;
+    --accent-deep: #a66b00;
+    --line: #e7e2d6;
+    --plate-bg: #fffefb;
+    --plate-line: #e2ddd0;
+    --radius: 7px;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #17140d;
+    --surface: #201c13;
+    --ink: #f3efe4;
+    --ink-muted: #a89f8c;
+    --ink-faint: #6f6857;
+    --accent: #f7b118;
+    --accent-deep: #ffd166;
+    --line: #37311f;
+    --plate-bg: #fffefb;
+    --plate-line: #e2ddd0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17140d;
+      --surface: #201c13;
+      --ink: #f3efe4;
+      --ink-muted: #a89f8c;
+      --ink-faint: #6f6857;
+      --accent: #f7b118;
+      --accent-deep: #ffd166;
+      --line: #37311f;
+      --plate-bg: #fffefb;
+      --plate-line: #e2ddd0;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  .skip { position: absolute; left: -9999px; }
+
+  /* ---------- header ---------- */
+  header.top {
+    padding: 28px clamp(20px, 4vw, 48px) 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent-deep);
+    font-weight: 600;
+  }
+  h1.title {
+    margin: 6px 0 8px;
+    font-size: clamp(24px, 3.4vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .subtitle {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--ink-muted);
+    font-size: 14.5px;
+  }
+  .accent-rule {
+    height: 3px;
+    width: 64px;
+    background: var(--accent);
+    border-radius: 2px;
+    margin-top: 16px;
+  }
+
+  /* ---------- layout ---------- */
+  .layout {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr);
+    gap: 0;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; border-right: none; border-bottom: 1px solid var(--line); }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 26px 18px 40px;
+    border-right: 1px solid var(--line);
+  }
+  nav.toc .toc-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 0 10px 10px;
+  }
+  nav.toc ul { list-style: none; margin: 0; padding: 0; }
+  nav.toc a {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    color: var(--ink-muted);
+  }
+  nav.toc a .code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    flex: 0 0 auto;
+  }
+  nav.toc a:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--ink); }
+  nav.toc a.active { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); font-weight: 600; }
+  nav.toc a.active .code { color: var(--accent-deep); }
+
+  main {
+    min-width: 0;
+    padding: 34px clamp(20px, 4vw, 56px) 80px;
+  }
+
+  section { scroll-margin-top: 20px; }
+  section + section { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--line); }
+
+  .sec-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-deep);
+    margin-bottom: 6px;
+  }
+  h2 {
+    margin: 0 0 12px;
+    font-size: clamp(19px, 2.4vw, 24px);
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 15.5px;
+    margin: 28px 0 8px;
+    color: var(--ink);
+  }
+  p.lede {
+    max-width: 72ch;
+    color: var(--ink-muted);
+    font-size: 14.5px;
+    margin: 0 0 20px;
+  }
+  p.lede code, td code, li code {
+    font-family: var(--mono);
+    font-size: 0.92em;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ---------- legend ---------- */
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin: 0 0 8px;
+  }
+  .legend .item { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--ink-muted); }
+  .legend .swatch { width: 22px; height: 2px; flex: 0 0 auto; }
+  .legend .swatch.dep { border-top: 2px dashed var(--ink-faint); }
+  .legend .swatch.assoc { border-top: 2px solid var(--ink-faint); }
+  .legend .diamond { width: 9px; height: 9px; transform: rotate(45deg); flex: 0 0 auto; }
+  .legend .diamond.hollow { border: 2px solid var(--ink-faint); }
+  .legend .diamond.filled { background: var(--ink-faint); }
+
+  /* ---------- diagram plate ---------- */
+  .plate-wrap { margin: 18px 0 6px; }
+  .plate {
+    background: var(--plate-bg);
+    border: 1px solid var(--plate-line);
+    border-radius: var(--radius);
+    padding: 22px clamp(14px, 2.4vw, 28px);
+    overflow-x: auto;
+    box-shadow: 0 1px 0 var(--plate-line);
+  }
+  .plate pre.mermaid { margin: 0; }
+  .plate-caption {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 8px;
+    padding: 0 2px;
+  }
+
+  /* ---------- use-case table ---------- */
+  table.uc {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 22px 0 8px;
+  }
+  table.uc caption { text-align: left; font-size: 11px; color: var(--ink-faint); margin-bottom: 8px; font-family: var(--mono); }
+  table.uc th, table.uc td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.uc th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+  table.uc td.actor { white-space: nowrap; color: var(--ink-muted); font-size: 12px; }
+  table.uc tr:last-child td { border-bottom: none; }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    color: var(--accent-deep);
+    font-weight: 600;
+  }
+
+  /* ---------- algorithm steps ---------- */
+  ol.steps {
+    margin: 18px 0;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: step;
+    display: grid;
+    gap: 10px;
+  }
+  ol.steps li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 12px;
+    font-size: 13.5px;
+    color: var(--ink-muted);
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  ol.steps li::before {
+    content: counter(step);
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--accent-deep);
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    border-radius: 5px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+  ol.steps b { color: var(--ink); }
+
+  /* ---------- activity / sequence sub-cards ---------- */
+  .flow-card { margin-bottom: 40px; }
+  .flow-card:last-child { margin-bottom: 8px; }
+  .flow-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+  .flow-head h3 { margin: 0; }
+  .flow-head .actors { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  .flow-note { max-width: 72ch; color: var(--ink-muted); font-size: 13px; margin: 0 0 6px; }
+
+  /* ---------- package legend for class diagram ---------- */
+  .pkg-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin: 16px 0 4px;
+  }
+  .pkg-legend .item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
+  .pkg-legend .dot { width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid; flex: 0 0 auto; }
+
+  footer.foot {
+    padding: 26px clamp(20px, 4vw, 56px) 50px;
+    color: var(--ink-faint);
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="eyebrow">Bab IV.C — Pemodelan Perangkat Lunak</div>
+  <h1 class="title">Sistem Prediksi Omzet — The Play Zone</h1>
+  <p class="subtitle">Use Case, Activity, Sequence, dan Class Diagram untuk aplikasi desktop Java + MySQL yang menerapkan Regresi Linear (Year-over-Year) pada Counter The Play Zone, PT. Ramayana Makmur Sentosa.</p>
+  <div class="accent-rule"></div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Daftar isi">
+    <div class="toc-label">Daftar Diagram</div>
+    <ul>
+      <li><a href="#ringkasan"><span class="code">00</span>Ringkasan &amp; Notasi</a></li>
+      <li><a href="#usecase"><span class="code">01</span>Use Case Diagram</a></li>
+      <li><a href="#activity"><span class="code">02</span>Activity Diagram</a></li>
+      <li><a href="#sequence"><span class="code">03</span>Sequence Diagram</a></li>
+      <li><a href="#class"><span class="code">04</span>Class Diagram</a></li>
+    </ul>
+  </nav>
+
+  <main id="main-content">
+
+    <section id="ringkasan">
+      <div class="sec-eyebrow">00 — Ringkasan</div>
+      <h2>Empat sudut pandang satu sistem</h2>
+      <p class="lede">Keempat diagram di bawah menggambarkan sistem yang sama dari sudut yang berbeda: <b>Use Case</b> memetakan siapa melakukan apa, <b>Activity</b> merinci alur algoritma Regresi Linear langkah demi langkah, <b>Sequence</b> menunjukkan pertukaran pesan antar objek Java saat runtime, dan <b>Class</b> memetakan struktur kode aktual di paket <code>com.theplayzone.prediksi</code>.</p>
+
+      <div class="legend" aria-label="Legenda notasi">
+        <div class="item"><span class="swatch assoc"></span> Asosiasi / alur pesan langsung</div>
+        <div class="item"><span class="swatch dep"></span> Dependency (memanggil / "uses")</div>
+        <div class="item"><span class="diamond hollow"></span> Agregasi (memiliki referensi)</div>
+        <div class="item"><span class="diamond filled"></span> Komposisi (bagian tak terpisahkan)</div>
+      </div>
+    </section>
+
+    <section id="usecase">
+      <div class="sec-eyebrow">01 — Use Case Diagram</div>
+      <h2>Aktor &amp; interaksi dengan sistem</h2>
+      <p class="lede">Dua aktor menggunakan sistem dengan hak akses berbeda: <b>Staf Operasional Pusat</b> mengelola data dan menjalankan proses, sementara <b>Kepala Divisi</b> meninjau hasil sebagai dasar keputusan (lihat <code>MainDashboard.java</code> &amp; <code>PrediksiForm.java</code> untuk pembatasan tombol per-role).</p>
+
+      <div class="plate-wrap">
+        <div class="plate">
+<pre class="mermaid">
+flowchart LR
+  actorOps(["Staf Operasional<br/>Pusat"]):::actor
+  actorDiv(["Kepala Divisi"]):::actor
+
+  subgraph SYS["Sistem Prediksi Omzet The Play Zone"]
+    direction TB
+    uc1(["Login"]):::uc
+    uc2(["Unduh Template Excel"]):::uc
+    uc3(["Import Data Transaksi"]):::uc
+    uc4(["Kelola Data Transaksi"]):::uc
+    uc5(["Rekap Omzet Bulanan"]):::uc
+    uc6(["Proses Prediksi Omzet"]):::uc
+    uc7(["Hitung Regresi Linear<br/>(Least Square)"]):::uc2nd
+    uc8(["Hitung MAPE"]):::uc2nd
+    uc9(["Simpan Hasil Prediksi"]):::uc
+    uc10(["Lihat Riwayat / Laporan"]):::uc
+    uc11(["Logout"]):::uc
+  end
+
+  actorOps --> uc1
+  actorOps --> uc2
+  actorOps --> uc3
+  actorOps --> uc4
+  actorOps --> uc5
+  actorOps --> uc6
+  actorOps --> uc9
+  actorOps --> uc10
+  actorOps --> uc11
+
+  actorDiv --> uc1
+  actorDiv --> uc6
+  actorDiv --> uc10
+  actorDiv --> uc11
+
+  uc6 -.include.-> uc7
+  uc6 -.include.-> uc8
+
+  classDef actor fill:#fff,stroke:#1a1a1a,stroke-width:1.5px,color:#1a1a1a
+  classDef uc fill:#fff5dc,stroke:#c98800,color:#1a1a1a
+  classDef uc2nd fill:#fdfbf5,stroke:#c98800,color:#726c5e,stroke-dasharray:3 2
+</pre>
+        </div>
+        <div class="plate-caption">
+          <span>fig 01 — use case diagram</span>
+          <span>include = uc6 selalu memanggil uc7 &amp; uc8</span>
+        </div>
+      </div>
+
+      <table class="uc">
+        <caption>tabel 01 — deskripsi ringkas use case</caption>
+        <thead>
+          <tr><th>Use case</th><th>Aktor</th><th>Deskripsi</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Login</td><td class="actor">Keduanya</td><td>Autentikasi <code>username</code>/<code>password</code> (hash SHA-256) melalui <code>AuthService</code>.</td></tr>
+          <tr><td>Unduh Template Excel</td><td class="actor">Staf Operasional</td><td>Menyalin file <code>.xlsx</code> bawaan aplikasi ke lokasi pilihan pengguna.</td></tr>
+          <tr><td>Import Data Transaksi</td><td class="actor">Staf Operasional</td><td>Membaca file Excel berisi transaksi harian, menyimpan ke tabel <code>transaksi_harian</code>.</td></tr>
+          <tr><td>Kelola Data Transaksi</td><td class="actor">Staf Operasional</td><td>Tambah/hapus transaksi harian secara manual lewat tabel interaktif.</td></tr>
+          <tr><td>Rekap Omzet Bulanan</td><td class="actor">Staf Operasional</td><td>Agregasi <code>SUM(nominal)</code> per tahun-bulan ke tabel <code>omzet_bulanan</code>.</td></tr>
+          <tr><td>Proses Prediksi Omzet</td><td class="actor">Keduanya</td><td>Menjalankan Regresi Linear atas data Year-over-Year untuk bulan/tahun target.</td></tr>
+          <tr><td>Simpan Hasil Prediksi</td><td class="actor">Staf Operasional</td><td>Menulis hasil (a, b, prediksi, MAPE) ke tabel <code>hasil_prediksi</code>.</td></tr>
+          <tr><td>Lihat Riwayat / Laporan</td><td class="actor">Keduanya</td><td>Menampilkan seluruh <code>hasil_prediksi</code> tersimpan sebagai bahan evaluasi.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="activity">
+      <div class="sec-eyebrow">02 — Activity Diagram</div>
+      <h2>Alur kerja tiap use case</h2>
+      <p class="lede">Sembilan diagram di bawah — satu per use case pada diagram 01 — merinci alur kerja masing-masing sampai ke method Java yang dipanggil. Yang paling detail adalah <b>2.6 Proses Prediksi Omzet</b>, karena di situlah algoritma Regresi Linear (Bab III) dieksekusi.</p>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.1 — Login</h3>
+          <span class="actors">LoginForm → AuthService → UserDAO</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Isi username &amp; password"]
+  a --> b{"Field kosong?"}
+  b -- "Ya" --> b1["Tampilkan validasi:\n'Username &amp; password wajib diisi'"]
+  b1 --> endA(("Selesai"))
+  b -- "Tidak" --> c["AuthService.login(username, password)"]
+  c --> d["UserDAO.findByUsername(username)"]
+  d --> e{"User ditemukan?"}
+  e -- "Tidak" --> f["Dialog: 'Username atau\npassword salah'"]
+  f --> endA
+  e -- "Ya" --> g["Hash password (SHA-256)\ndan bandingkan dengan DB"]
+  g --> h{"Hash cocok?"}
+  h -- "Tidak" --> f
+  h -- "Ya" --> i["Buka MainDashboard\nsesuai role pengguna"]
+  i --> endB(("Selesai"))
+
+  classDef node fill:#fff,stroke:#1a1a1a,color:#1a1a1a
+  classDef warn fill:#fff5dc,stroke:#c98800,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,c,d,g,i node
+  class b1,f warn
+  class start,endA,endB terminal
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 02.1 — activity: login</span><span>AuthService.login()</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.2 — Unduh Template Excel</h3>
+          <span class="actors">ImportDataForm</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Klik 'Unduh Template Excel'\npada ImportDataForm"]
+  a --> b["Tampilkan dialog Save"]
+  b --> c{"Pilih lokasi\n&amp; klik Save?"}
+  c -- "Batal" --> endA(("Selesai"))
+  c -- "Ya" --> d["Salin resource\n/templates/Template_Import_Transaksi.xlsx\nke lokasi pilihan"]
+  d --> e["Tampilkan path file\ndi log aplikasi"]
+  e --> endB(("Selesai"))
+
+  classDef node fill:#fff,stroke:#1a1a1a,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,b,d,e node
+  class start,endA,endB terminal
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 02.2 — activity: unduh template</span><span>resource dibundel di jar</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.3 — Import Data Transaksi</h3>
+          <span class="actors">ImportDataForm → ExcelImportService</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Klik 'Pilih File Excel (.xlsx)'"]
+  a --> b["Klik 'Import ke Database'"]
+  b --> c["Buat baris baru di import_log"]
+  c --> d["Buka workbook dengan Apache POI"]
+  d --> e["Loop tiap baris data\n(mulai baris 2)"]
+  e --> f{"Tanggal &amp; nominal\nvalid?"}
+  f -- "Tidak" --> g["Catat pesan gagal,\njumlahGagal++"]
+  g --> h{"Masih ada baris\nberikutnya?"}
+  f -- "Ya" --> i["Simpan ke transaksi_harian,\njumlahBaris++"]
+  i --> h
+  h -- "Ya" --> e
+  h -- "Tidak" --> j["Update status di import_log"]
+  j --> k["Tampilkan ringkasan:\nX berhasil, Y gagal + alasan"]
+  k --> endA(("Selesai"))
+
+  classDef node fill:#fff,stroke:#1a1a1a,color:#1a1a1a
+  classDef warn fill:#fff5dc,stroke:#c98800,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,b,c,d,i,j,k node
+  class g warn
+  class start,endA terminal
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 02.3 — activity: import data transaksi</span><span>gagal per-baris tidak menghentikan loop</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.4 — Kelola Data Transaksi</h3>
+          <span class="actors">KelolaTransaksiForm → TransaksiDAO</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Buka menu Kelola\nData Transaksi"]
+  a --> b["Tampilkan tabel\ntransaksi_harian"]
+  b --> c{"Aksi pengguna?"}
+  c -- "Tambah" --> d["Isi Tanggal, Nominal, Metode"]
+  d --> e{"Input valid?"}
+  e -- "Tidak" --> f["Dialog: 'Data tidak valid'"]
+  f --> b
+  e -- "Ya" --> g["insertTransaksi() ke DB"]
+  g --> b
+  c -- "Hapus" --> h{"Ada baris\nterpilih?"}
+  h -- "Tidak" --> ii["Dialog: 'Pilih baris\nyang ingin dihapus'"]
+  ii --> b
+  h -- "Ya" --> j["deleteTransaksi(id)"]
+  j --> b
+  c -- "Refresh" --> b
+  c -- "Kembali" --> endA(("Selesai"))
+
+  classDef node fill:#fff,stroke:#1a1a1a,color:#1a1a1a
+  classDef warn fill:#fff5dc,stroke:#c98800,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,b,d,g,j node
+  class f,ii warn
+  class start,endA terminal
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 02.4 — activity: kelola data transaksi</span><span>CRUD manual (tanpa Update)</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.5 — Rekap Omzet Bulanan</h3>
+          <span class="actors">ImportDataForm → TransaksiDAO</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Klik 'Rekap ke\nOmzet Bulanan'"]
+  a --> b["Jalankan agregasi:\nSUM(nominal) GROUP BY tahun, bulan"]
+  b --> c["INSERT ... ON DUPLICATE KEY UPDATE\nke tabel omzet_bulanan"]
+  c --> d["Tampilkan: 'Rekap omzet\nbulanan berhasil diperbarui'"]
+  d --> endA(("Selesai"))
+
+  classDef node fill:#fff,stroke:#1a1a1a,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,b,c,d node
+  class start,endA terminal
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 02.5 — activity: rekap omzet bulanan</span><span>TransaksiDAO.rekapBulanan()</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.6 — Proses Prediksi Omzet</h3>
+          <span class="actors">PrediksiForm → RegresiLinearService</span>
+        </div>
+        <p class="flow-note">Paling detail — persis kerangka kerja algoritma Bab III: prapemrosesan, pembentukan variabel, kalkulasi komponen dasar, pencarian <code>a</code> &amp; <code>b</code>, hingga evaluasi MAPE.</p>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Staf pilih Bulan &amp; Tahun Target\npada PrediksiForm"]
+  a --> b["Ambil data omzet_bulanan\nbulan sama, tahun kurang dari target\n(TransaksiDAO.getOmzetByBulan)"]
+  b --> c{"Jumlah data historis\nn ≥ 2?"}
+  c -- "Tidak" --> d["Tampilkan peringatan:\n'Data historis belum cukup'"]
+  d --> endA(("Selesai"))
+  c -- "Ya" --> e["Bentuk variabel:\nX = urutan tahun ke-n, Y = total omzet"]
+  e --> f["Hitung ΣX, ΣY, ΣXY, ΣX²"]
+  f --> g["Hitung b = (n·ΣXY − ΣX·ΣY) / (n·ΣX² − (ΣX)²)"]
+  g --> h["Hitung a = (ΣY − b·ΣX) / n"]
+  h --> i["Substitusi X target = n+1\nke persamaan Y = a + bX"]
+  i --> j["Hitung MAPE dari nilai fitting\nvs data aktual (MapeEvaluator)"]
+  j --> k["Render angka hasil + grafik tren\n(ChartHelper.buatPanelTren)"]
+  k --> l{"Staf klik\n'Simpan Hasil Prediksi'?"}
+  l -- "Ya" --> m["Tulis baris baru ke\ntabel hasil_prediksi (PrediksiDAO)"]
+  m --> endB(("Selesai"))
+  l -- "Tidak" --> endB
+
+  classDef node fill:#fff,stroke:#1a1a1a,stroke-width:1px,color:#1a1a1a,text-align:left
+  classDef warn fill:#fff5dc,stroke:#c98800,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,b,e,f,g,h,i,j,k,m node
+  class d warn
+  class start,endA,endB terminal
+</pre>
+          </div>
+          <div class="plate-caption">
+            <span>fig 02.6 — activity: proses prediksi</span>
+            <span>sumber logika: RegresiLinearService.java</span>
+          </div>
+        </div>
+
+        <h3>Enam langkah komputasi (ringkas Bab III)</h3>
+        <ol class="steps">
+          <li><span><b>Prapemrosesan</b> — agregasi <code>transaksi_harian</code> menjadi <code>omzet_bulanan</code> per tahun-bulan.</span></li>
+          <li><span><b>Pembentukan variabel</b> — X = urutan waktu historis, Y = omzet aktual bulan tersebut.</span></li>
+          <li><span><b>Kalkulasi komponen dasar</b> — ΣX, ΣY, ΣXY, ΣX² dari seluruh data Year-over-Year.</span></li>
+          <li><span><b>Pencarian a &amp; b</b> — metode kuadrat terkecil (Least Square Method).</span></li>
+          <li><span><b>Pembentukan model &amp; prediksi</b> — substitusi X target baru ke Y = a + bX.</span></li>
+          <li><span><b>Evaluasi &amp; visualisasi</b> — hitung MAPE, render grafik tren pada antarmuka.</span></li>
+        </ol>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.7 — Simpan Hasil Prediksi</h3>
+          <span class="actors">PrediksiForm → PrediksiDAO</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Prasyarat: sudah\nklik 'Proses Prediksi'"]
+  a --> b["Klik 'Simpan\nHasil Prediksi'"]
+  b --> c["PrediksiDAO.simpan(hasil, idUser)"]
+  c --> d{"Penyimpanan\nberhasil?"}
+  d -- "Ya" --> e["Dialog: 'Hasil prediksi\nberhasil disimpan'"]
+  e --> endA(("Selesai"))
+  d -- "Tidak" --> f["Dialog error:\npesan SQLException"]
+  f --> endA
+
+  classDef node fill:#fff,stroke:#1a1a1a,color:#1a1a1a
+  classDef warn fill:#fff5dc,stroke:#c98800,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,b,c,e node
+  class f warn
+  class start,endA terminal
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 02.7 — activity: simpan hasil prediksi</span><span>khusus role operasional</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.8 — Lihat Riwayat / Laporan Prediksi</h3>
+          <span class="actors">LaporanForm → PrediksiDAO</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Buka menu Riwayat\n/ Laporan Prediksi"]
+  a --> b["PrediksiDAO.findRiwayat()\n(JOIN hasil_prediksi + users)"]
+  b --> c{"Ada data\ntersimpan?"}
+  c -- "Tidak" --> d["Tampilkan tabel kosong"]
+  d --> endA(("Selesai"))
+  c -- "Ya" --> e["Tampilkan tabel: tanggal,\ntarget, n, a, b, prediksi, MAPE, oleh"]
+  e --> f{"Klik Refresh?"}
+  f -- "Ya" --> b
+  f -- "Tidak" --> endA
+
+  classDef node fill:#fff,stroke:#1a1a1a,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,b,d,e node
+  class start,endA terminal
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 02.8 — activity: lihat riwayat/laporan</span><span>read-only untuk Kepala Divisi</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>2.9 — Logout</h3>
+          <span class="actors">MainDashboard → LoginForm</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+flowchart TD
+  start(("Mulai")) --> a["Klik 'Logout' pada Dashboard"]
+  a --> b["Buka jendela LoginForm baru"]
+  b --> c["Tutup (dispose)\njendela Dashboard"]
+  c --> endA(("Selesai"))
+
+  classDef node fill:#fff,stroke:#1a1a1a,color:#1a1a1a
+  classDef terminal fill:#1a1a1a,stroke:#1a1a1a,color:#fff
+  class a,b,c node
+  class start,endA terminal
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 02.9 — activity: logout</span><span>tanpa invalidasi sesi/token</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sequence">
+      <div class="sec-eyebrow">03 — Sequence Diagram</div>
+      <h2>Pertukaran pesan antar objek</h2>
+      <p class="lede">Tiga alur paling representatif: autentikasi, masuknya data mentah, dan inti dari sistem — proses prediksi itu sendiri.</p>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>3.1 — Login</h3>
+          <span class="actors">LoginForm → AuthService → UserDAO</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+  actor U as Pengguna
+  participant UI as LoginForm
+  participant Auth as AuthService
+  participant PW as PasswordUtil
+  participant DAO as UserDAO
+  participant DB as MySQL (users)
+
+  U->>UI: Isi username &amp; password, klik Login
+  UI->>Auth: login(username, password)
+  Auth->>DAO: findByUsername(username)
+  DAO->>DB: SELECT * FROM users WHERE username=?
+  DB-->>DAO: baris user / kosong
+  DAO-->>Auth: User atau null
+  alt user ditemukan
+    Auth->>PW: sha256(password)
+    PW-->>Auth: hash
+    alt hash cocok
+      Auth-->>UI: User
+      UI-->>U: Buka MainDashboard sesuai role
+    else hash tidak cocok
+      Auth-->>UI: null
+      UI-->>U: Dialog "Username atau password salah"
+    end
+  else user tidak ada
+    Auth-->>UI: null
+    UI-->>U: Dialog "Username atau password salah"
+  end
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 03.1 — sequence: login</span><span>SHA-256, tanpa sesi/token</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>3.2 — Import Data Transaksi</h3>
+          <span class="actors">ImportDataForm → ExcelImportService → TransaksiDAO</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+  actor S as Staf Operasional
+  participant UI as ImportDataForm
+  participant Svc as ExcelImportService
+  participant POI as Apache POI (Workbook)
+  participant DAO as TransaksiDAO
+  participant DB as MySQL
+
+  S->>UI: Pilih file .xlsx, klik "Import ke Database"
+  UI->>Svc: importFile(file, idUser)
+  Svc->>DB: INSERT INTO import_log(...)
+  Svc->>POI: WorkbookFactory.create(file)
+  POI-->>Svc: Sheet baris transaksi
+  loop tiap baris data
+    Svc->>Svc: parseTanggal() / parseNominal()
+    alt baris valid
+      Svc->>DAO: insertTransaksi(TransaksiHarian)
+      DAO->>DB: INSERT INTO transaksi_harian
+      Svc->>Svc: jumlahBaris++
+    else baris gagal parse
+      Svc->>Svc: catat pesanGagal, jumlahGagal++
+    end
+  end
+  Svc->>DB: UPDATE import_log SET status, jumlah_baris
+  Svc-->>UI: HasilImport(jumlahBaris, jumlahGagal, pesanGagal)
+  UI-->>S: Tampilkan ringkasan + daftar baris gagal di log
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 03.2 — sequence: import excel</span><span>gagal per-baris tidak menghentikan proses</span></div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-head">
+          <h3>3.3 — Proses Prediksi Omzet</h3>
+          <span class="actors">PrediksiForm → RegresiLinearService → MapeEvaluator → ChartHelper → PrediksiDAO</span>
+        </div>
+        <div class="plate-wrap">
+          <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+  actor S as Staf Operasional
+  participant UI as PrediksiForm
+  participant Svc as RegresiLinearService
+  participant DAO as TransaksiDAO
+  participant DB as MySQL (omzet_bulanan)
+  participant Mape as MapeEvaluator
+  participant Chart as ChartHelper
+  participant PDAO as PrediksiDAO
+
+  S->>UI: Pilih bulan &amp; tahun target, klik "Proses Prediksi"
+  UI->>Svc: prediksi(bulan, tahun)
+  Svc->>DAO: getOmzetByBulan(bulan, tahun)
+  DAO->>DB: SELECT ... WHERE bulan=? AND tahun&lt;? ORDER BY tahun
+  DB-->>DAO: baris omzet_bulanan
+  DAO-->>Svc: List OmzetBulanan
+
+  alt n &lt; 2
+    Svc-->>UI: IllegalStateException("data tidak cukup")
+    UI-->>S: Dialog peringatan, tombol Simpan nonaktif
+  else n >= 2
+    Svc->>Svc: hitung ΣX, ΣY, ΣXY, ΣX²
+    Svc->>Svc: hitung koefisien b, konstanta a
+    Svc->>Svc: hitung nilaiPrediksi = a + b·(n+1)
+    Svc->>Mape: hitung(aktual[], fitting[])
+    Mape-->>Svc: mapePersen
+    Svc-->>UI: PrediksiResult
+    UI->>Chart: buatPanelTren(hasil)
+    Chart-->>UI: ChartPanel (JFreeChart)
+    UI-->>S: Tampilkan a, b, prediksi, MAPE + grafik tren
+    opt Staf klik "Simpan Hasil Prediksi"
+      S->>UI: klik Simpan
+      UI->>PDAO: simpan(hasil, idUser)
+      PDAO->>DB: INSERT INTO hasil_prediksi
+      DB-->>PDAO: id_prediksi
+      PDAO-->>UI: OK
+      UI-->>S: Dialog "Berhasil disimpan"
+    end
+  end
+</pre>
+          </div>
+          <div class="plate-caption"><span>fig 03.3 — sequence: proses prediksi (alur utama)</span><span>Kepala Divisi: sama tanpa opsi simpan</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="class">
+      <div class="sec-eyebrow">04 — Class Diagram</div>
+      <h2>Struktur kode <code>com.theplayzone.prediksi</code></h2>
+      <p class="lede">Memetakan langsung ke lima paket pada source tree: <code>model</code>, <code>dao</code>, <code>service</code>, <code>ui</code>, dan <code>util</code>. Warna kartu menandai paket asal kelas.</p>
+
+      <div class="pkg-legend" aria-label="Legenda paket">
+        <div class="item"><span class="dot" style="background:#fff5dc;border-color:#c98800"></span> model</div>
+        <div class="item"><span class="dot" style="background:#eaf1ff;border-color:#3b6ec2"></span> dao</div>
+        <div class="item"><span class="dot" style="background:#ffefea;border-color:#c25a3b"></span> service</div>
+        <div class="item"><span class="dot" style="background:#f0fbef;border-color:#3e8e52"></span> ui</div>
+        <div class="item"><span class="dot" style="background:#f3eefb;border-color:#7b5ea7"></span> util</div>
+      </div>
+
+      <div class="plate-wrap">
+        <div class="plate">
+<pre class="mermaid">
+classDiagram
+  class User {
+    -int idUser
+    -String username
+    -String passwordHash
+    -String namaLengkap
+    -String role
+  }
+  class TransaksiHarian {
+    -long idTransaksi
+    -LocalDate tanggal
+    -BigDecimal nominal
+    -String metodeBayar
+    -Integer idImport
+  }
+  class OmzetBulanan {
+    -int idOmzet
+    -int tahun
+    -int bulan
+    -BigDecimal totalOmzet
+  }
+  class HasilPrediksi {
+    -int idPrediksi
+    -int bulanTarget
+    -int tahunTarget
+    -int jumlahDataN
+    -double konstantaA
+    -double koefisienB
+    -double nilaiPrediksi
+    -double mapePersen
+    -LocalDateTime tanggalProses
+  }
+  class PrediksiResult {
+    -int jumlahDataN
+    -double konstantaA
+    -double koefisienB
+    -double nilaiPrediksi
+    -double mapePersen
+  }
+  class TitikRegresi {
+    -int x
+    -int tahun
+    -double yAktual
+    -double yFitting
+  }
+
+  class UserDAO {
+    +findByUsername(String) User
+  }
+  class TransaksiDAO {
+    +insertTransaksi(TransaksiHarian) long
+    +deleteTransaksi(long) void
+    +findAll() List
+    +rekapBulanan() void
+    +getOmzetByBulan(int, int) List
+  }
+  class PrediksiDAO {
+    +simpan(PrediksiResult, int) long
+    +findRiwayat() List
+  }
+
+  class AuthService {
+    +login(String, String) User
+  }
+  class PasswordUtil {
+    +sha256(String) String
+  }
+  class RegresiLinearService {
+    +prediksi(int, int) PrediksiResult
+  }
+  class MapeEvaluator {
+    +hitung(double[], double[]) double
+  }
+  class ExcelImportService {
+    +importFile(File, int) HasilImport
+  }
+
+  class LoginForm
+  class MainDashboard
+  class ImportDataForm
+  class KelolaTransaksiForm
+  class PrediksiForm
+  class LaporanForm
+
+  class ChartHelper {
+    +buatPanelTren(PrediksiResult) ChartPanel
+  }
+
+  LoginForm ..> AuthService
+  AuthService ..> UserDAO
+  AuthService ..> PasswordUtil
+  UserDAO ..> User
+
+  MainDashboard --> ImportDataForm
+  MainDashboard --> KelolaTransaksiForm
+  MainDashboard --> PrediksiForm
+  MainDashboard --> LaporanForm
+  MainDashboard o-- User
+
+  ImportDataForm ..> ExcelImportService
+  ExcelImportService ..> TransaksiDAO
+  ExcelImportService ..> TransaksiHarian
+
+  KelolaTransaksiForm ..> TransaksiDAO
+  TransaksiDAO ..> TransaksiHarian
+  TransaksiDAO ..> OmzetBulanan
+
+  PrediksiForm ..> RegresiLinearService
+  PrediksiForm ..> PrediksiDAO
+  PrediksiForm ..> ChartHelper
+  RegresiLinearService ..> TransaksiDAO
+  RegresiLinearService ..> MapeEvaluator
+  RegresiLinearService ..> PrediksiResult
+  PrediksiResult "1" *-- "many" TitikRegresi
+  PrediksiDAO ..> HasilPrediksi
+
+  LaporanForm ..> PrediksiDAO
+
+  cssClass "User,TransaksiHarian,OmzetBulanan,HasilPrediksi,PrediksiResult,TitikRegresi" modelClass
+  cssClass "UserDAO,TransaksiDAO,PrediksiDAO" daoClass
+  cssClass "AuthService,PasswordUtil,RegresiLinearService,MapeEvaluator,ExcelImportService" serviceClass
+  cssClass "LoginForm,MainDashboard,ImportDataForm,KelolaTransaksiForm,PrediksiForm,LaporanForm" uiClass
+  cssClass "ChartHelper" utilClass
+
+  classDef modelClass fill:#fff5dc,stroke:#c98800,color:#1a1a1a
+  classDef daoClass fill:#eaf1ff,stroke:#3b6ec2,color:#1a1a1a
+  classDef serviceClass fill:#ffefea,stroke:#c25a3b,color:#1a1a1a
+  classDef uiClass fill:#f0fbef,stroke:#3e8e52,color:#1a1a1a
+  classDef utilClass fill:#f3eefb,stroke:#7b5ea7,color:#1a1a1a
+</pre>
+        </div>
+        <div class="plate-caption">
+          <span>fig 04 — class diagram</span>
+          <span>..&gt; dependency · o-- agregasi · *-- komposisi</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="foot">
+  com.theplayzone.prediksi — Java 17, Swing, MySQL 8, Apache POI, JFreeChart · dihasilkan dari struktur kode aktual repo <code>anandamaulana/java</code>
+</footer>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var sections = links.map(function (l) {
+      return document.querySelector(l.getAttribute('href'));
+    }).filter(Boolean);
+
+    if (!('IntersectionObserver' in window) || sections.length === 0) return;
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var id = '#' + entry.target.id;
+        links.forEach(function (l) {
+          l.classList.toggle('active', l.getAttribute('href') === id);
+        });
+      });
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+    sections.forEach(function (s) { observer.observe(s); });
+  })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
+
+</body>
+</html>
