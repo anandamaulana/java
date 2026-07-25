@@ -51,6 +51,12 @@ public class KelolaTransaksiForm extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
+        JPanel nav = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton btnKembali = new JButton("← Kembali ke Dashboard");
+        btnKembali.addActionListener(e -> dispose());
+        nav.add(btnKembali);
+        panel.add(nav, BorderLayout.NORTH);
+
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT));

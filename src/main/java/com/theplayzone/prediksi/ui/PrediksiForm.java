@@ -61,6 +61,11 @@ public class PrediksiForm extends JFrame {
         JPanel root = new JPanel(new BorderLayout(10, 10));
         root.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
+        JPanel nav = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton btnKembali = new JButton("← Kembali ke Dashboard");
+        btnKembali.addActionListener(e -> dispose());
+        nav.add(btnKembali);
+
         JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT));
         form.add(new JLabel("Bulan Target:"));
         form.add(cmbBulan);
@@ -84,7 +89,11 @@ public class PrediksiForm extends JFrame {
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(txtHasil), chartContainer);
         split.setResizeWeight(0.35);
 
-        root.add(form, BorderLayout.NORTH);
+        JPanel northWrap = new JPanel(new BorderLayout());
+        northWrap.add(nav, BorderLayout.NORTH);
+        northWrap.add(form, BorderLayout.CENTER);
+
+        root.add(northWrap, BorderLayout.NORTH);
         root.add(split, BorderLayout.CENTER);
 
         add(root);

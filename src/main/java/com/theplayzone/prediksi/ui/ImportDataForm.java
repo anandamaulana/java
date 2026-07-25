@@ -42,6 +42,11 @@ public class ImportDataForm extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
+        JPanel nav = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton btnKembali = new JButton("← Kembali ke Dashboard");
+        btnKembali.addActionListener(e -> dispose());
+        nav.add(btnKembali);
+
         JPanel template = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton btnTemplate = new JButton("Unduh Template Excel");
         btnTemplate.addActionListener(e -> unduhTemplate());
@@ -70,7 +75,11 @@ public class ImportDataForm extends JFrame {
         north.add(top);
         north.add(actions);
 
-        panel.add(north, BorderLayout.NORTH);
+        JPanel northWrap = new JPanel(new BorderLayout());
+        northWrap.add(nav, BorderLayout.NORTH);
+        northWrap.add(north, BorderLayout.CENTER);
+
+        panel.add(northWrap, BorderLayout.NORTH);
         panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
 
         JLabel hint = new JLabel("<html>Format kolom: A=Tanggal, B=Nominal, C=Metode Bayar (opsional: cash/e_wallet/kartu_debit/kartu_kredit). Baris 1 = header.</html>");
