@@ -20,6 +20,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Import data transaksi harian dari file Excel (.xlsx).
@@ -33,6 +35,7 @@ public class ExcelImportService {
     public static class HasilImport {
         public int jumlahBaris;
         public int jumlahGagal;
+        public final List<String> pesanGagal = new ArrayList<>();
     }
 
     public HasilImport importFile(File file, int idUser) throws Exception {
@@ -54,6 +57,7 @@ public class ExcelImportService {
                     hasil.jumlahBaris++;
                 } catch (Exception ex) {
                     hasil.jumlahGagal++;
+                    hasil.pesanGagal.add("Baris " + (row.getRowNum() + 1) + ": " + ex.getMessage());
                 }
             }
         }
@@ -90,15 +94,38 @@ public class ExcelImportService {
     }
 
     private LocalDate parseTanggal(Cell cell) {
-        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-            return cell.getLocalDateTimeCellValue().toLocalDate();
+        CellType type = cell.getCellType();
+        if (type == CellType.NUMERIC) {
+            // Sel numeric di kolom tanggal hampir pasti angka serial tanggal Excel,
+            // walau formatnya tidak terdeteksi isCellDateFormatted() (mis. hasil paste-value).
+            return DateUtil.getLocalDateTime(cell.getNumericCellValue()).toLocalDate();
         }
-        return LocalDate.parse(cell.getStringCellValue().trim());
+        if (type == CellType.STRING) {
+            String raw = cell.getStringCellValue().trim();
+            try {
+                return LocalDate.parse(raw); // format ISO: yyyy-MM-dd
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("Format tanggal '" + raw + "' harus yyyy-MM-dd (mis. 2025-01-15)");
+            }
+        }
+        throw new IllegalArgumentException("Kolom tanggal kosong/tidak dikenali");
     }
 
     private double parseNominal(Cell cell) {
         if (cell.getCellType() == CellType.STRING) {
-            return Double.parseDouble(cell.getStringCellValue().replaceAll("[^0-9.]", ""));
+            String raw = cell.getStringCellValue().trim();
+            String cleaned = raw.replaceAll("[^0-9,.\\-]", ""); // buang "Rp", spasi, dsb.
+            if (cleaned.contains(",")) {
+                // Format Indonesia: "." pemisah ribuan, "," pemisah desimal -> 1.500.000,50
+                cleaned = cleaned.replace(".", "").replace(",", ".");
+            } else {
+                // Tanpa koma: anggap semua "." adalah pemisah ribuan -> 1.500.000
+                cleaned = cleaned.replace(".", "");
+            }
+            if (cleaned.isEmpty()) {
+                throw new IllegalArgumentException("Nominal '" + raw + "' bukan angka yang valid");
+            }
+            return Double.parseDouble(cleaned);
         }
         return cell.getNumericCellValue();
     }

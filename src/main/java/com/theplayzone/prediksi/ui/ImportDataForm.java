@@ -124,6 +124,13 @@ public class ImportDataForm extends JFrame {
             ExcelImportService service = new ExcelImportService();
             ExcelImportService.HasilImport hasil = service.importFile(selectedFile, user.getIdUser());
             logArea.append("Import selesai: " + hasil.jumlahBaris + " baris berhasil, " + hasil.jumlahGagal + " baris gagal.\n");
+            int tampil = Math.min(hasil.pesanGagal.size(), 10);
+            for (int i = 0; i < tampil; i++) {
+                logArea.append("  - " + hasil.pesanGagal.get(i) + "\n");
+            }
+            if (hasil.pesanGagal.size() > tampil) {
+                logArea.append("  - ... dan " + (hasil.pesanGagal.size() - tampil) + " baris gagal lainnya\n");
+            }
         } catch (Exception ex) {
             logArea.append("Gagal import: " + ex.getMessage() + "\n");
         }
