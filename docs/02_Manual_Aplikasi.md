@@ -33,13 +33,15 @@ Tombol **Logout** di pojok kanan atas kembali ke layar Login.
 
 Digunakan Staf Operasional untuk memasukkan arsip transaksi harian dari file spreadsheet accounting.
 
+> **Download format template**: gunakan `templates/Template_Import_Transaksi.xlsx` di root proyek sebagai contoh format siap pakai — tinggal diisi/diganti datanya oleh bagian accounting, lalu langsung bisa di-import (kolom & 4 baris contoh sudah sesuai format yang dibaca sistem).
+
 1. Buka menu **Import Data Transaksi (Excel)**.
-2. Klik **Pilih File Excel (.xlsx)**, pilih file sumber.
+2. Klik **Pilih File Excel (.xlsx)**, pilih file sumber (bisa hasil isian dari template di atas).
 3. Format kolom file Excel (baris 1 = header, data mulai baris 2):
 
    | Kolom | Isi | Contoh |
    |---|---|---|
-   | A | Tanggal | 2025-01-15 |
+   | A | Tanggal (format `yyyy-MM-dd`) | 2025-01-15 |
    | B | Nominal | 1500000 |
    | C | Metode Bayar *(opsional)* | cash / e_wallet / kartu_debit / kartu_kredit |
 
