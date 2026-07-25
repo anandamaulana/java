@@ -33,11 +33,11 @@ Tombol **Logout** di pojok kanan atas kembali ke layar Login.
 
 Digunakan Staf Operasional untuk memasukkan arsip transaksi harian dari file spreadsheet accounting.
 
-> **Download format template**: gunakan `templates/Template_Import_Transaksi.xlsx` di root proyek sebagai contoh format siap pakai — tinggal diisi/diganti datanya oleh bagian accounting, lalu langsung bisa di-import (kolom & 4 baris contoh sudah sesuai format yang dibaca sistem).
-
 1. Buka menu **Import Data Transaksi (Excel)**.
-2. Klik **Pilih File Excel (.xlsx)**, pilih file sumber (bisa hasil isian dari template di atas).
-3. Format kolom file Excel (baris 1 = header, data mulai baris 2):
+2. Klik **Unduh Template Excel** — muncul dialog Save, pilih lokasi penyimpanan (mis. Desktop), klik Save. Aplikasi akan menyalin file template `.xlsx` siap pakai ke lokasi tersebut (template ini dibundel di dalam aplikasi, tidak perlu file terpisah/internet).
+3. Buka file template yang baru diunduh, hapus baris contoh, isi dengan data transaksi asli dari accounting, lalu simpan.
+4. Kembali ke aplikasi, klik **Pilih File Excel (.xlsx)**, pilih file yang sudah diisi tadi.
+5. Format kolom file Excel (baris 1 = header, data mulai baris 2) — sudah sesuai bawaan template:
 
    | Kolom | Isi | Contoh |
    |---|---|---|
@@ -45,8 +45,8 @@ Digunakan Staf Operasional untuk memasukkan arsip transaksi harian dari file spr
    | B | Nominal | 1500000 |
    | C | Metode Bayar *(opsional)* | cash / e_wallet / kartu_debit / kartu_kredit |
 
-4. Klik **Import ke Database** — hasil (jumlah baris berhasil/gagal) tampil di area log.
-5. Klik **Rekap ke Omzet Bulanan** — mengagregasi seluruh transaksi harian menjadi total omzet per bulan (dipakai algoritma prediksi). **Wajib dijalankan setiap kali ada data baru** sebelum memproses prediksi.
+6. Klik **Import ke Database** — hasil (jumlah baris berhasil/gagal) tampil di area log.
+7. Klik **Rekap ke Omzet Bulanan** — mengagregasi seluruh transaksi harian menjadi total omzet per bulan (dipakai algoritma prediksi). **Wajib dijalankan setiap kali ada data baru** sebelum memproses prediksi.
 
 ## 4. Kelola Data Transaksi
 

@@ -18,6 +18,9 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class ImportDataForm extends JFrame {
 
@@ -30,7 +33,7 @@ public class ImportDataForm extends JFrame {
         super("Import Data Transaksi");
         this.user = user;
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(580, 420);
+        setSize(580, 460);
         setLocationRelativeTo(null);
         initUI();
     }
@@ -38,6 +41,11 @@ public class ImportDataForm extends JFrame {
     private void initUI() {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
         panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+
+        JPanel template = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton btnTemplate = new JButton("Unduh Template Excel");
+        btnTemplate.addActionListener(e -> unduhTemplate());
+        template.add(btnTemplate);
 
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton btnPilih = new JButton("Pilih File Excel (.xlsx)");
@@ -57,7 +65,8 @@ public class ImportDataForm extends JFrame {
 
         logArea.setEditable(false);
 
-        JPanel north = new JPanel(new GridLayout(2, 1));
+        JPanel north = new JPanel(new GridLayout(3, 1));
+        north.add(template);
         north.add(top);
         north.add(actions);
 
@@ -68,6 +77,32 @@ public class ImportDataForm extends JFrame {
         panel.add(hint, BorderLayout.SOUTH);
 
         add(panel);
+    }
+
+    private void unduhTemplate() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("Template_Import_Transaksi.xlsx"));
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File target = chooser.getSelectedFile();
+        if (!target.getName().toLowerCase().endsWith(".xlsx")) {
+            target = new File(target.getParentFile(), target.getName() + ".xlsx");
+        }
+
+        try (InputStream in = getClass().getResourceAsStream("/templates/Template_Import_Transaksi.xlsx");
+             OutputStream out = new FileOutputStream(target)) {
+            if (in == null) {
+                throw new IllegalStateException("Template tidak ditemukan di dalam aplikasi.");
+            }
+            in.transferTo(out);
+            logArea.append("Template berhasil diunduh ke: " + target.getAbsolutePath() + "\n");
+        } catch (Exception ex) {
+            logArea.append("Gagal mengunduh template: " + ex.getMessage() + "\n");
+        }
     }
 
     private void pilihFile() {
