@@ -46,6 +46,8 @@ Ini jalur import utama — data dari sinilah yang dipakai algoritma Regresi Line
 4. Klik **Import Daftar Toko + Rekap**. Aplikasi akan mengimpor sheet DAFTAR TOKO (daftar cabang) lalu 12 sheet bulanan (Januari–Desember) sekaligus. Ringkasan hasil (jumlah toko, baris rekap berhasil/gagal) tampil di log.
 5. Import ulang dengan file yang sama (mis. setelah data direvisi) aman dilakukan — data lama akan ditimpa, bukan diduplikasi.
 
+**Melihat data yang sudah diimport**: di menu yang sama ada tab **Daftar Toko**, **Master Metode Bayar**, dan **Rekap Transaksi** (di sebelah tab "Log Import") — masing-masing menampilkan isi tabel database saat ini beserta tombol **Refresh**. Tab Rekap Transaksi punya filter Tahun (atau centang "Semua Tahun" untuk menampilkan semuanya).
+
 > Untuk tahun berikutnya, siapkan workbook rekap baru (boleh salinan template dengan nilai diperbarui) dan ulangi langkah 3–4 dengan Tahun yang sesuai.
 
 ## 5. Import Data Transaksi (Excel) — pencatatan harian (opsional, khusus Admin)

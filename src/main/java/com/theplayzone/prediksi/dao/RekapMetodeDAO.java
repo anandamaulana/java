@@ -2,6 +2,7 @@ package com.theplayzone.prediksi.dao;
 
 import com.theplayzone.prediksi.koneksi.DatabaseConnection;
 import com.theplayzone.prediksi.model.OmzetBulanan;
+import com.theplayzone.prediksi.model.RekapMetodeBaris;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -58,6 +59,36 @@ public class RekapMetodeDAO {
                     o.setBulan(bulan);
                     o.setTotalOmzet(BigDecimal.valueOf(rs.getLong("total")));
                     list.add(o);
+                }
+            }
+        }
+        return list;
+    }
+
+    /** Semua baris rekap (join nama toko & metode), untuk ditampilkan di tabel. tahun = null berarti semua tahun. */
+    public List<RekapMetodeBaris> findAll(Integer tahun) throws SQLException {
+        String sql = "SELECT t.kode_toko, t.nama_toko, m.nama_metode, r.tahun, r.bulan, r.jumlah_transaksi " +
+                "FROM rekap_metode_bulanan r " +
+                "JOIN toko t ON t.id_toko = r.id_toko " +
+                "JOIN metode_bayar m ON m.id_metode = r.id_metode " +
+                (tahun != null ? "WHERE r.tahun = ? " : "") +
+                "ORDER BY t.kode_toko, r.tahun, r.bulan, m.urutan";
+        List<RekapMetodeBaris> list = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (tahun != null) {
+                ps.setInt(1, tahun);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    RekapMetodeBaris b = new RekapMetodeBaris();
+                    b.setKodeToko(rs.getString("kode_toko"));
+                    b.setNamaToko(rs.getString("nama_toko"));
+                    b.setNamaMetode(rs.getString("nama_metode"));
+                    b.setTahun(rs.getInt("tahun"));
+                    b.setBulan(rs.getInt("bulan"));
+                    b.setJumlahTransaksi(rs.getInt("jumlah_transaksi"));
+                    list.add(b);
                 }
             }
         }
