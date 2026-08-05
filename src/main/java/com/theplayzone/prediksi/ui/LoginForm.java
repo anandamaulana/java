@@ -101,7 +101,7 @@ public class LoginForm extends JFrame {
         gbc.insets = new Insets(14, 6, 6, 6);
         card.add(btnLogin, gbc);
 
-        JLabel hint = new JLabel("<html><i>Akun contoh: admin/admin123 (Kepala Divisi), operasional/opr123 (Staf Operasional)</i></html>", SwingConstants.CENTER);
+        JLabel hint = new JLabel("<html><i>Akun contoh: admin/admin123 (Admin), staff/staff123 (Staff)</i></html>", SwingConstants.CENTER);
         hint.setFont(hint.getFont().deriveFont(10f));
         row++;
         gbc.gridy = row;

@@ -5,7 +5,7 @@ public class User {
     private String username;
     private String passwordHash;
     private String namaLengkap;
-    private String role; // "operasional" atau "kepala_divisi"
+    private String role; // "admin" atau "staff"
 
     public int getIdUser() { return idUser; }
     public void setIdUser(int idUser) { this.idUser = idUser; }

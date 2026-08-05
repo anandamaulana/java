@@ -9,6 +9,7 @@ pom.xml                  # Konfigurasi Maven (dependency & build)
 docker-compose.yml       # Opsi menjalankan MySQL via Docker (alternatif XAMPP)
 db/schema.sql            # Skema database + seed akun & contoh data
 db/migration_001_toko.sql  # Migrasi tambahan untuk database lama (toko/metode_bayar/rekap)
+db/migration_002_admin_staff.sql  # Migrasi role users lama (operasional/kepala_divisi) ke (admin/staff)
 src/main/resources/      # db.properties (konfigurasi koneksi database)
 src/main/java/com/theplayzone/prediksi/
 ├── Main.java             # Entry point aplikasi
@@ -17,7 +18,7 @@ src/main/java/com/theplayzone/prediksi/
 ├── dao/                   # Akses data (UserDAO, TransaksiDAO, PrediksiDAO, TokoDAO, MetodeBayarDAO, RekapMetodeDAO)
 ├── service/                # Logika bisnis (RegresiLinearService, MapeEvaluator, ExcelImportService,
 │                           #   MasterMetodeBayarImportService, RekapTokoImportService, PdfReportService, AuthService)
-├── ui/                     # Form Swing (Login, Dashboard, Import, Kelola Transaksi, Import Rekap Toko, Prediksi, Laporan)
+├── ui/                     # Form Swing (Login, Dashboard, Kelola User, Import, Kelola Transaksi, Import Rekap Toko, Prediksi, Laporan)
 └── util/                   # ChartHelper (JFreeChart)
 docs/
 ├── 01_Manual_Book.md       # Gambaran umum aplikasi
@@ -35,6 +36,6 @@ docs/
    - **Docker**: `docker compose up -d` (otomatis membuat database & seed data).
 2. Buka project ini di NetBeans (**File > Open Project**, `pom.xml` terdeteksi otomatis) lalu **Run**.
    Atau lewat terminal: `mvn clean package && java -jar target/prediksi-theplayzone.jar`.
-3. Login dengan `admin` / `admin123` (Kepala Divisi) atau `operasional` / `opr123` (Staf Operasional).
+3. Login dengan `admin` / `admin123` (Admin) atau `staff` / `staff123` (Staff).
 
 Panduan lengkap ada di folder `docs/`.

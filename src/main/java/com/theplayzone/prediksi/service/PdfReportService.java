@@ -190,7 +190,7 @@ public class PdfReportService {
         kiri.setAlignment(Element.ALIGN_CENTER);
         kiri.add("Dibuat oleh,\n\n\n\n\n");
         kiri.add(new Chunk("( .............................. )\n", fontJabatan));
-        kiri.add("Staf Operasional Pusat\n");
+        kiri.add("Staff\n");
 
         Paragraph kanan = new Paragraph();
         kanan.setFont(fontNormal);

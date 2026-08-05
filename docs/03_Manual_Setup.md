@@ -27,7 +27,7 @@ Panduan ini mencakup dua jalur database yang bisa dipilih salah satu: **XAMPP** 
 3. Buka `http://localhost/phpmyadmin`.
 4. Klik tab **Import** → pilih file `db/schema.sql` dari folder proyek ini → klik **Go**.
    - Ini otomatis membuat database `db_theplayzone`, seluruh tabel, dan 2 akun contoh.
-   - **Database yang sudah ada dari versi lama** (sebelum fitur multi-toko): jangan import ulang `schema.sql` (akan gagal karena tabel sudah ada). Import `db/migration_001_toko.sql` saja lewat cara yang sama — ini menambahkan tabel `toko`/`metode_bayar`/`rekap_metode_bulanan` tanpa menghapus data yang sudah ada.
+   - **Database yang sudah ada dari versi lama**: jangan import ulang `schema.sql` (akan gagal karena tabel sudah ada). Import migrasi yang sesuai lewat cara yang sama, urut: `db/migration_001_toko.sql` (menambah tabel `toko`/`metode_bayar`/`rekap_metode_bulanan`), lalu `db/migration_002_admin_staff.sql` (mengubah role `operasional`/`kepala_divisi` menjadi `staff`/`admin`) — keduanya tanpa menghapus data yang sudah ada.
 5. Konfigurasi default di `src/main/resources/db.properties` sudah cocok dengan XAMPP (`root` tanpa password). Tidak perlu diubah kecuali konfigurasi MySQL di komputer client berbeda.
 
 ## 1B. Setup Database via Docker (Alternatif)
@@ -72,8 +72,8 @@ Perintah `mvn clean package` menghasilkan **fat jar** (sudah berisi semua depend
 
 | Username | Password | Role |
 |---|---|---|
-| `admin` | `admin123` | Kepala Divisi |
-| `operasional` | `opr123` | Staf Operasional Pusat |
+| `admin` | `admin123` | Admin |
+| `staff` | `staff123` | Staff |
 
 Lihat `02_Manual_Aplikasi.md` untuk panduan pemakaian tiap menu.
 
@@ -86,13 +86,15 @@ Lihat `02_Manual_Aplikasi.md` untuk panduan pemakaian tiap menu.
 | `Gagal terhubung ke database` saat login | MySQL belum aktif | Pastikan modul MySQL di XAMPP hijau/running, atau `docker compose ps` menunjukkan container `mysql` sehat |
 | `Unknown database 'db_theplayzone'` | `schema.sql` belum diimport | Ulangi langkah 1A poin 4, atau pastikan `docker-entrypoint-initdb.d` memuat file saat container **pertama kali** dibuat (jika container lama sudah ada tanpa data, jalankan `docker compose down -v` lalu `docker compose up -d` untuk membuat ulang dari awal) |
 | Port 3306 sudah dipakai (bentrok XAMPP vs Docker) | Kedua jalur database aktif bersamaan | Gunakan **salah satu saja** — matikan MySQL di XAMPP jika memakai Docker, atau `docker compose down` jika memakai XAMPP |
-| `Data historis ... belum cukup untuk regresi` saat proses prediksi | Data omzet bulanan untuk bulan tsb kurang dari 2 tahun sebelumnya | Tambah data historis lewat Import Excel / Kelola Data Transaksi, lalu jalankan **Rekap ke Omzet Bulanan** |
+| `Data historis ... belum cukup untuk regresi` saat proses prediksi | Rekap transaksi toko untuk bulan/toko tsb kurang dari 2 tahun sebelumnya | Lengkapi data lewat menu **Import Rekap Toko Bulanan** |
+| `Table 'db_theplayzone.metode_bayar' doesn't exist` (atau `toko`/`rekap_metode_bulanan`) | Database dibuat sebelum fitur multi-toko ditambahkan | Import `db/migration_001_toko.sql` (lihat langkah 1A poin 4) |
+| `Data truncated for column 'role'` saat login akun lama, atau akun `operasional`/`kepala_divisi` tidak bisa login | Database dibuat sebelum role diubah menjadi Admin/Staff | Import `db/migration_002_admin_staff.sql` |
 | Karakter Rupiah/format aneh di hasil prediksi | Locale sistem operasi non-Indonesia | Tidak mempengaruhi perhitungan, hanya tampilan format mata uang |
 
 ---
 
 ## 5. Keamanan (Sebelum Dipakai Produksi)
 
-- Ganti password akun `admin` dan `operasional` bawaan — update kolom `password_hash` di tabel `users` dengan hash SHA-256 dari password baru.
+- Ganti password akun `admin` dan `staff` bawaan — update kolom `password_hash` di tabel `users` dengan hash SHA-256 dari password baru (atau buat akun Staff baru lewat menu **Kelola Data Pengguna**, lalu hapus akun `staff` bawaan).
 - Jika memakai XAMPP di jaringan bersama, set password root MySQL (jangan biarkan kosong) dan sesuaikan `db.properties`.
 - Batasi akses folder `db.properties` karena berisi kredensial database.

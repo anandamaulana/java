@@ -9,7 +9,7 @@ CREATE TABLE users (
     username      VARCHAR(50) NOT NULL UNIQUE,
     password_hash CHAR(64) NOT NULL,          -- SHA-256 hex
     nama_lengkap  VARCHAR(100) NOT NULL,
-    role          ENUM('operasional', 'kepala_divisi') NOT NULL DEFAULT 'operasional',
+    role          ENUM('admin', 'staff') NOT NULL DEFAULT 'staff',
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -93,8 +93,8 @@ CREATE TABLE hasil_prediksi (
 -- admin / admin123   (role: kepala_divisi)
 -- operasional / opr123  (role: operasional)
 INSERT INTO users (username, password_hash, nama_lengkap, role) VALUES
-('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Kepala Divisi The Play Zone', 'kepala_divisi'),
-('operasional', 'd2c8205cbb870f54a95c3183349a30a4e29520faaf2dd5fc3366cd7c91ce0437', 'Staf Operasional Pusat', 'operasional');
+('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Administrator', 'admin'),
+('staff', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'Staff Operasional', 'staff');
 
 -- Contoh data historis omzet bulanan (opsional, boleh dihapus lalu diisi data riil via fitur Import Excel + Rekap)
 INSERT INTO omzet_bulanan (tahun, bulan, total_omzet) VALUES

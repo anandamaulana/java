@@ -85,13 +85,14 @@ public class MainDashboard extends JFrame {
         grid.setBackground(AppTheme.PUTIH);
         wrapper.add(grid, BorderLayout.NORTH);
 
-        boolean isOperasional = "operasional".equals(user.getRole());
+        boolean isAdmin = "admin".equals(user.getRole());
 
-        if (isOperasional) {
-            grid.add(menuCard("Import Data Transaksi (Excel)", "Unduh template, isi, lalu import data harian", () -> new ImportDataForm(user).setVisible(true)));
-            grid.add(menuCard("Kelola Data Transaksi", "Tambah/lihat/hapus transaksi harian secara manual", () -> new KelolaTransaksiForm().setVisible(true)));
-            grid.add(menuCard("Import Rekap Toko Bulanan", "Import Master Metode Bayar & Rekap Omzet Per Toko Bulanan", () -> new ImportRekapTokoForm(user).setVisible(true)));
+        if (isAdmin) {
+            grid.add(menuCard("Kelola Data Pengguna", "Buat/hapus akun Staff (khusus Admin)", () -> new KelolaUserForm(user).setVisible(true)));
+            grid.add(menuCard("Import Data Transaksi (Excel)", "Unduh template, isi, lalu import data harian (legaci)", () -> new ImportDataForm(user).setVisible(true)));
+            grid.add(menuCard("Kelola Data Transaksi", "Tambah/lihat/hapus transaksi harian secara manual (legaci)", () -> new KelolaTransaksiForm().setVisible(true)));
         }
+        grid.add(menuCard("Import Rekap Toko Bulanan", "Import Master Metode Bayar & Rekap Omzet Per Toko Bulanan", () -> new ImportRekapTokoForm(user).setVisible(true)));
         grid.add(menuCard("Proses & Lihat Prediksi Omzet", "Jalankan Regresi Linear untuk bulan/tahun target", () -> new PrediksiForm(user).setVisible(true)));
         grid.add(menuCard("Riwayat / Laporan Prediksi", "Lihat seluruh hasil prediksi yang tersimpan", () -> new LaporanForm().setVisible(true)));
 
@@ -99,7 +100,7 @@ public class MainDashboard extends JFrame {
     }
 
     private String labelRole() {
-        return "kepala_divisi".equals(user.getRole()) ? "Kepala Divisi" : "Staf Operasional Pusat";
+        return "admin".equals(user.getRole()) ? "Admin" : "Staff";
     }
 
     private JPanel menuCard(String title, String desc, Runnable action) {

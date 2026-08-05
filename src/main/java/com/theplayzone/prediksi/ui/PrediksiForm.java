@@ -104,12 +104,9 @@ public class PrediksiForm extends JFrame {
         btnProses.addActionListener(e -> prosesPrediksi());
         form.add(btnProses);
 
-        boolean isOperasional = "operasional".equals(user.getRole());
         btnSimpan.setEnabled(false);
         btnSimpan.addActionListener(e -> simpanHasil());
-        if (isOperasional) {
-            form.add(btnSimpan);
-        }
+        form.add(btnSimpan);
 
         btnExportPdf.setEnabled(false);
         btnExportPdf.addActionListener(e -> exportPdf());
