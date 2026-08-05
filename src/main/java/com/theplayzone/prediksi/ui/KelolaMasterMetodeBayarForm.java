@@ -2,7 +2,9 @@ package com.theplayzone.prediksi.ui;
 
 import com.theplayzone.prediksi.dao.MetodeBayarDAO;
 import com.theplayzone.prediksi.model.MetodeBayar;
+import com.theplayzone.prediksi.model.User;
 import com.theplayzone.prediksi.service.MasterMetodeBayarImportService;
+import com.theplayzone.prediksi.service.PdfReportService;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -30,7 +32,9 @@ import java.util.List;
 /** Kelola Master Metode Bayar -- tambah/hapus manual, atau import massal dari file Excel. */
 public class KelolaMasterMetodeBayarForm extends JFrame {
 
+    private final User user;
     private final MetodeBayarDAO metodeBayarDAO = new MetodeBayarDAO();
+    private final PdfReportService pdfReportService = new PdfReportService();
     private final DefaultTableModel tableModel = new DefaultTableModel(
             new Object[]{"Kode", "Nama Metode", "Kategori", "Urutan", "Aktif"}, 0) {
         @Override
@@ -48,8 +52,9 @@ public class KelolaMasterMetodeBayarForm extends JFrame {
     private final JTextArea logArea = new JTextArea(4, 50);
     private File fileImport;
 
-    public KelolaMasterMetodeBayarForm() {
+    public KelolaMasterMetodeBayarForm(User user) {
         super("Kelola Master Metode Bayar");
+        this.user = user;
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(780, 580);
         setLocationRelativeTo(null);
@@ -106,11 +111,15 @@ public class KelolaMasterMetodeBayarForm extends JFrame {
             }
         });
 
+        JButton btnExportPdf = new JButton("Export PDF");
+        btnExportPdf.addActionListener(e -> exportPdf());
+
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT));
         actions.add(btnSimpan);
         actions.add(btnHapus);
         actions.add(btnBersihkan);
         actions.add(btnRefresh);
+        actions.add(btnExportPdf);
 
         JPanel formImport = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel lblFile = new JLabel("Belum ada file dipilih.");
@@ -197,6 +206,25 @@ public class KelolaMasterMetodeBayarForm extends JFrame {
             muatData();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Gagal menghapus (kemungkinan metode sudah punya data rekap): " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportPdf() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("Laporan_Master_Metode_Bayar.pdf"));
+        chooser.setFileFilter(new FileNameExtensionFilter("PDF Files (*.pdf)", "pdf"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File target = chooser.getSelectedFile();
+        if (!target.getName().toLowerCase().endsWith(".pdf")) {
+            target = new File(target.getParentFile(), target.getName() + ".pdf");
+        }
+        try {
+            pdfReportService.exportTabelMetodeBayar(metodeBayarDAO.findAll(), user, target);
+            JOptionPane.showMessageDialog(this, "Laporan PDF berhasil dibuat:\n" + target.getAbsolutePath(), "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Gagal membuat PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

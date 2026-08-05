@@ -32,8 +32,11 @@ Output aplikasi berupa **angka rekomendasi prediksi (baseline)** beserta **grafi
 | Proses Prediksi | Menjalankan algoritma Regresi Linear per toko/semua toko untuk bulan & tahun target | Admin, Staff |
 | Lihat Grafik Tren & Prediksi | Visualisasi data aktual, garis tren, dan titik prediksi | Admin, Staff |
 | Simpan Hasil Prediksi | Menyimpan hasil proses ke riwayat basis data | Admin, Staff |
-| Export Laporan PDF | Membuat file PDF siap cetak & ditandatangani | Admin, Staff |
-| Riwayat / Laporan Prediksi | Melihat seluruh riwayat hasil prediksi yang pernah diproses | Admin, Staff |
+| Export Laporan PDF | Membuat file PDF siap cetak & ditandatangani (per hasil prediksi) | Admin, Staff |
+| Riwayat / Laporan Prediksi | Melihat, filter, hapus, dan export PDF riwayat hasil prediksi | Admin, Staff |
+| Visualisasi Grafik Prediksi Omzet | Menampilkan ulang grafik tren dari hasil prediksi tersimpan + export PDF | Admin, Staff |
+| Laporan Gabungan | Export satu PDF berisi Daftar Toko + Master Metode Bayar + Rekap Transaksi + Riwayat Prediksi | Admin, Staff |
+| Laporan Daftar Toko / Master Metode Bayar / Rekap Transaksi | Export PDF tabel data masing-masing (dari menu Kelola terkait) | Admin (Toko/Metode), Admin+Staff (Rekap) |
 
 ## 3. Peran Pengguna (Role)
 

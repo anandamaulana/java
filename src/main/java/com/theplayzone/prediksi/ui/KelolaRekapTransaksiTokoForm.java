@@ -7,6 +7,7 @@ import com.theplayzone.prediksi.model.MetodeBayar;
 import com.theplayzone.prediksi.model.RekapMetodeBaris;
 import com.theplayzone.prediksi.model.Toko;
 import com.theplayzone.prediksi.model.User;
+import com.theplayzone.prediksi.service.PdfReportService;
 import com.theplayzone.prediksi.service.RekapTokoImportService;
 
 import javax.swing.BorderFactory;
@@ -45,6 +46,7 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
     private final TokoDAO tokoDAO = new TokoDAO();
     private final MetodeBayarDAO metodeBayarDAO = new MetodeBayarDAO();
     private final RekapMetodeDAO rekapMetodeDAO = new RekapMetodeDAO();
+    private final PdfReportService pdfReportService = new PdfReportService();
 
     private final DefaultTableModel tableModel = new DefaultTableModel(
             new Object[]{"Kode Toko", "Nama Toko", "Metode", "Tahun", "Bulan", "Jumlah Transaksi"}, 0) {
@@ -61,6 +63,7 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
     private final JComboBox<String> cmbBulan = new JComboBox<>(NAMA_BULAN);
     private final JSpinner spnJumlah = new JSpinner(new SpinnerNumberModel(0, 0, 999999, 1));
 
+    private final JComboBox<Object> cmbTokoFilter = new JComboBox<>();
     private final JCheckBox chkSemuaTahun = new JCheckBox("Semua Tahun", true);
     private final JSpinner spnTahunFilter;
 
@@ -97,14 +100,19 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         nav.add(btnKembali);
 
         JPanel filter = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filter.add(new JLabel("Toko:"));
+        filter.add(cmbTokoFilter);
         chkSemuaTahun.addActionListener(e -> spnTahunFilter.setEnabled(!chkSemuaTahun.isSelected()));
         spnTahunFilter.setEnabled(false);
-        JButton btnTampilkan = new JButton("Tampilkan");
-        btnTampilkan.addActionListener(e -> muatData());
         filter.add(chkSemuaTahun);
         filter.add(new JLabel("Tahun:"));
         filter.add(spnTahunFilter);
+        JButton btnTampilkan = new JButton("Tampilkan");
+        btnTampilkan.addActionListener(e -> muatData());
         filter.add(btnTampilkan);
+        JButton btnExportPdf = new JButton("Export PDF");
+        btnExportPdf.addActionListener(e -> exportPdf());
+        filter.add(btnExportPdf);
 
         JPanel navWrap = new JPanel(new BorderLayout());
         navWrap.add(nav, BorderLayout.NORTH);
@@ -181,9 +189,12 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
     private void muatPilihan() {
         cmbToko.removeAllItems();
         cmbMetode.removeAllItems();
+        cmbTokoFilter.removeAllItems();
+        cmbTokoFilter.addItem("Semua Toko");
         try {
             for (Toko t : tokoDAO.findAll()) {
                 cmbToko.addItem(t);
+                cmbTokoFilter.addItem(t);
             }
             for (MetodeBayar m : metodeBayarDAO.findAll()) {
                 cmbMetode.addItem(m);
@@ -196,17 +207,48 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         }
     }
 
+    private Integer idTokoFilterTerpilih() {
+        Object sel = cmbTokoFilter.getSelectedItem();
+        return (sel instanceof Toko) ? ((Toko) sel).getIdToko() : null;
+    }
+
     private void muatData() {
         tableModel.setRowCount(0);
         try {
             Integer tahun = chkSemuaTahun.isSelected() ? null : (Integer) spnTahunFilter.getValue();
-            List<RekapMetodeBaris> list = rekapMetodeDAO.findAll(tahun);
+            List<RekapMetodeBaris> list = rekapMetodeDAO.findAll(idTokoFilterTerpilih(), tahun);
             for (RekapMetodeBaris b : list) {
                 tableModel.addRow(new Object[]{b.getKodeToko(), b.getNamaToko(), b.getNamaMetode(),
                         b.getTahun(), NAMA_BULAN[b.getBulan() - 1], b.getJumlahTransaksi()});
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Gagal memuat data: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportPdf() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("Laporan_Rekap_Transaksi_Toko.pdf"));
+        chooser.setFileFilter(new FileNameExtensionFilter("PDF Files (*.pdf)", "pdf"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File target = chooser.getSelectedFile();
+        if (!target.getName().toLowerCase().endsWith(".pdf")) {
+            target = new File(target.getParentFile(), target.getName() + ".pdf");
+        }
+        Object tokoSel = cmbTokoFilter.getSelectedItem();
+        String labelToko = (tokoSel instanceof Toko) ? ((Toko) tokoSel).getKodeToko() + " - " + ((Toko) tokoSel).getNamaToko() : "Semua Toko";
+        String labelTahun = chkSemuaTahun.isSelected() ? "Semua Tahun" : String.valueOf(spnTahunFilter.getValue());
+        String filterLabel = "Toko: " + labelToko + " | Tahun: " + labelTahun;
+
+        try {
+            Integer tahun = chkSemuaTahun.isSelected() ? null : (Integer) spnTahunFilter.getValue();
+            List<RekapMetodeBaris> list = rekapMetodeDAO.findAll(idTokoFilterTerpilih(), tahun);
+            pdfReportService.exportTabelRekap(list, filterLabel, user, target);
+            JOptionPane.showMessageDialog(this, "Laporan PDF berhasil dibuat:\n" + target.getAbsolutePath(), "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Gagal membuat PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

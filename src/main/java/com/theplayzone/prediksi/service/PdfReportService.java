@@ -13,7 +13,11 @@ import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.theplayzone.prediksi.model.HasilPrediksi;
+import com.theplayzone.prediksi.model.MetodeBayar;
 import com.theplayzone.prediksi.model.PrediksiResult;
+import com.theplayzone.prediksi.model.RekapMetodeBaris;
+import com.theplayzone.prediksi.model.Toko;
 import com.theplayzone.prediksi.model.User;
 import org.jfree.chart.JFreeChart;
 
@@ -26,6 +30,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import javax.imageio.ImageIO;
 
@@ -57,6 +63,198 @@ public class PdfReportService {
         } catch (Exception ex) {
             throw new IOException("Gagal membuat PDF: " + ex.getMessage(), ex);
         }
+    }
+
+    public void exportTabelToko(List<Toko> data, User user, File target) throws IOException {
+        buatDokumenTabel(target, "LAPORAN DAFTAR TOKO", data.size() + " toko terdaftar", user,
+                new String[]{"Kode Toko", "Nama Toko", "Lokasi"}, () -> {
+                    List<String[]> rows = new ArrayList<>();
+                    for (Toko t : data) {
+                        rows.add(new String[]{t.getKodeToko(), t.getNamaToko(), t.getLokasiToko() == null ? "-" : t.getLokasiToko()});
+                    }
+                    return rows;
+                });
+    }
+
+    public void exportTabelMetodeBayar(List<MetodeBayar> data, User user, File target) throws IOException {
+        buatDokumenTabel(target, "LAPORAN MASTER METODE BAYAR", data.size() + " metode terdaftar", user,
+                new String[]{"Kode", "Nama Metode", "Kategori", "Urutan", "Aktif"}, () -> {
+                    List<String[]> rows = new ArrayList<>();
+                    for (MetodeBayar m : data) {
+                        rows.add(new String[]{String.valueOf(m.getKodeMetode()), m.getNamaMetode(),
+                                m.getKategori() == null ? "-" : m.getKategori(), String.valueOf(m.getUrutan()),
+                                m.isAktif() ? "Ya" : "Tidak"});
+                    }
+                    return rows;
+                });
+    }
+
+    public void exportTabelRekap(List<RekapMetodeBaris> data, String filterLabel, User user, File target) throws IOException {
+        buatDokumenTabel(target, "LAPORAN REKAP TRANSAKSI TOKO", filterLabel + " — " + data.size() + " baris", user,
+                new String[]{"Kode Toko", "Nama Toko", "Metode", "Tahun", "Bulan", "Jumlah Transaksi"}, () -> {
+                    List<String[]> rows = new ArrayList<>();
+                    for (RekapMetodeBaris b : data) {
+                        rows.add(new String[]{b.getKodeToko(), b.getNamaToko(), b.getNamaMetode(),
+                                String.valueOf(b.getTahun()), NAMA_BULAN[b.getBulan() - 1],
+                                String.format(Locale.US, "%,d", b.getJumlahTransaksi())});
+                    }
+                    return rows;
+                });
+    }
+
+    public void exportTabelRiwayat(List<HasilPrediksi> data, String filterLabel, User user, File target) throws IOException {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        buatDokumenTabel(target, "LAPORAN HASIL PREDIKSI", filterLabel + " — " + data.size() + " baris", user,
+                new String[]{"Diproses", "Toko", "Target", "n", "a", "b", "Prediksi", "MAPE (%)", "Oleh"}, () -> {
+                    List<String[]> rows = new ArrayList<>();
+                    for (HasilPrediksi h : data) {
+                        rows.add(new String[]{
+                                h.getTanggalProses().format(fmt),
+                                h.getNamaToko() == null ? "Semua Toko" : h.getNamaToko(),
+                                NAMA_BULAN[h.getBulanTarget() - 1] + " " + h.getTahunTarget(),
+                                String.valueOf(h.getJumlahDataN()),
+                                String.format(Locale.US, "%.2f", h.getKonstantaA()),
+                                String.format(Locale.US, "%.2f", h.getKoefisienB()),
+                                String.format(Locale.US, "%,.0f", h.getNilaiPrediksi()),
+                                String.format(Locale.US, "%.2f", h.getMapePersen()),
+                                h.getNamaUser()
+                        });
+                    }
+                    return rows;
+                });
+    }
+
+    /** Laporan gabungan: Daftar Toko + Master Metode Bayar + Rekap Transaksi + Riwayat Prediksi dalam satu file. */
+    public void exportGabungan(List<Toko> toko, List<MetodeBayar> metode, List<RekapMetodeBaris> rekap,
+                                List<HasilPrediksi> riwayat, String filterLabel, User user, File target) throws IOException {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        Document document = new Document(PageSize.A4, 42, 42, 36, 42);
+        try (FileOutputStream fos = new FileOutputStream(target)) {
+            PdfWriter.getInstance(document, fos);
+            document.open();
+
+            tambahKop(document);
+            tambahJudulGenerik(document, "LAPORAN GABUNGAN", filterLabel);
+            tambahInfoProses(document, user);
+
+            tambahSubJudul(document, "1. Daftar Toko (" + toko.size() + ")");
+            List<String[]> baris1 = new ArrayList<>();
+            for (Toko t : toko) {
+                baris1.add(new String[]{t.getKodeToko(), t.getNamaToko(), t.getLokasiToko() == null ? "-" : t.getLokasiToko()});
+            }
+            tambahTabelData(document, new String[]{"Kode Toko", "Nama Toko", "Lokasi"}, baris1);
+
+            tambahSubJudul(document, "2. Master Metode Bayar (" + metode.size() + ")");
+            List<String[]> baris2 = new ArrayList<>();
+            for (MetodeBayar m : metode) {
+                baris2.add(new String[]{String.valueOf(m.getKodeMetode()), m.getNamaMetode(),
+                        m.getKategori() == null ? "-" : m.getKategori(), m.isAktif() ? "Ya" : "Tidak"});
+            }
+            tambahTabelData(document, new String[]{"Kode", "Nama Metode", "Kategori", "Aktif"}, baris2);
+
+            tambahSubJudul(document, "3. Rekap Transaksi Toko (" + rekap.size() + " baris)");
+            List<String[]> baris3 = new ArrayList<>();
+            for (RekapMetodeBaris b : rekap) {
+                baris3.add(new String[]{b.getKodeToko(), b.getNamaMetode(), String.valueOf(b.getTahun()),
+                        NAMA_BULAN[b.getBulan() - 1], String.format(Locale.US, "%,d", b.getJumlahTransaksi())});
+            }
+            tambahTabelData(document, new String[]{"Kode Toko", "Metode", "Tahun", "Bulan", "Jumlah Transaksi"}, baris3);
+
+            tambahSubJudul(document, "4. Riwayat Hasil Prediksi (" + riwayat.size() + " baris)");
+            List<String[]> baris4 = new ArrayList<>();
+            for (HasilPrediksi h : riwayat) {
+                baris4.add(new String[]{
+                        h.getTanggalProses().format(fmt),
+                        h.getNamaToko() == null ? "Semua Toko" : h.getNamaToko(),
+                        NAMA_BULAN[h.getBulanTarget() - 1] + " " + h.getTahunTarget(),
+                        String.format(Locale.US, "%,.0f", h.getNilaiPrediksi()),
+                        String.format(Locale.US, "%.2f%%", h.getMapePersen())
+                });
+            }
+            tambahTabelData(document, new String[]{"Diproses", "Toko", "Target", "Prediksi", "MAPE"}, baris4);
+
+            tambahTandaTangan(document);
+            document.close();
+        } catch (Exception ex) {
+            throw new IOException("Gagal membuat PDF: " + ex.getMessage(), ex);
+        }
+    }
+
+    private void buatDokumenTabel(File target, String judul, String subJudul, User user, String[] headers,
+                                   java.util.function.Supplier<List<String[]>> penyedia) throws IOException {
+        Document document = new Document(PageSize.A4, 42, 42, 36, 42);
+        try (FileOutputStream fos = new FileOutputStream(target)) {
+            PdfWriter.getInstance(document, fos);
+            document.open();
+
+            tambahKop(document);
+            tambahJudulGenerik(document, judul, subJudul);
+            tambahInfoProses(document, user);
+            tambahTabelData(document, headers, penyedia.get());
+            tambahTandaTangan(document);
+
+            document.close();
+        } catch (Exception ex) {
+            throw new IOException("Gagal membuat PDF: " + ex.getMessage(), ex);
+        }
+    }
+
+    private void tambahJudulGenerik(Document document, String judulUtama, String subJudul) throws Exception {
+        Font fontJudul = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, HITAM);
+        Paragraph judul = new Paragraph(judulUtama, fontJudul);
+        judul.setAlignment(Element.ALIGN_CENTER);
+        document.add(judul);
+
+        Font fontSub = FontFactory.getFont(FontFactory.HELVETICA, 11, Color.DARK_GRAY);
+        Paragraph sub = new Paragraph(subJudul, fontSub);
+        sub.setAlignment(Element.ALIGN_CENTER);
+        sub.setSpacingAfter(16f);
+        document.add(sub);
+    }
+
+    private void tambahSubJudul(Document document, String teks) throws Exception {
+        Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11.5f, HITAM);
+        Paragraph p = new Paragraph(teks, font);
+        p.setSpacingBefore(6f);
+        p.setSpacingAfter(6f);
+        document.add(p);
+    }
+
+    private void tambahTabelData(Document document, String[] headers, List<String[]> rows) throws Exception {
+        PdfPTable table = new PdfPTable(headers.length);
+        table.setWidthPercentage(100);
+        table.setSpacingAfter(16f);
+
+        Font fontHeader = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE);
+        Font fontCell = FontFactory.getFont(FontFactory.HELVETICA, 9, HITAM);
+
+        for (String h : headers) {
+            PdfPCell sel = new PdfPCell(new Phrase(h, fontHeader));
+            sel.setBackgroundColor(HITAM);
+            sel.setPadding(5f);
+            table.addCell(sel);
+        }
+
+        if (rows.isEmpty()) {
+            PdfPCell kosong = new PdfPCell(new Phrase("Tidak ada data.", fontCell));
+            kosong.setColspan(headers.length);
+            kosong.setPadding(8f);
+            kosong.setBorder(Rectangle.BOTTOM);
+            kosong.setBorderColor(new Color(0xE0, 0xE0, 0xE0));
+            table.addCell(kosong);
+        } else {
+            for (String[] row : rows) {
+                for (String val : row) {
+                    PdfPCell sel = new PdfPCell(new Phrase(val == null ? "-" : val, fontCell));
+                    sel.setPadding(4f);
+                    sel.setBorder(Rectangle.BOTTOM);
+                    sel.setBorderColor(new Color(0xE0, 0xE0, 0xE0));
+                    table.addCell(sel);
+                }
+            }
+        }
+
+        document.add(table);
     }
 
     private void tambahKop(Document document) throws Exception {

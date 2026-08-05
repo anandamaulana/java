@@ -25,7 +25,7 @@ Dokumen ini menjelaskan cara memakai setiap menu aplikasi, mengikuti alur kerja 
 **Admin bukan Kepala Divisi.** Kepala Divisi adalah pihak eksternal yang menerima laporan PDF (lihat bagian 6), bukan pengguna sistem.
 
 - **Admin** — superuser yang menyiapkan akses & data dasar: **Kelola Data Pengguna**, **Kelola Daftar Toko**, **Kelola Master Metode Bayar**, plus semua menu yang bisa diakses Staff.
-- **Staff** — operasional harian: **Kelola Rekap Transaksi Toko**, **Proses & Lihat Prediksi**, **Riwayat / Laporan Prediksi**.
+- **Staff** — operasional harian: **Kelola Rekap Transaksi Toko**, **Proses & Lihat Prediksi**, **Riwayat / Laporan Prediksi**, **Visualisasi Grafik Prediksi Omzet**, **Laporan Gabungan**.
 
 Tombol **Logout** di pojok kanan atas menutup sesi dan kembali ke layar Login.
 
@@ -47,6 +47,7 @@ Data master cabang/toko — variabel esensial untuk pelaporan dan pemisahan targ
 2. **Tambah/Edit manual**: isi Kode Toko, Nama Toko, Lokasi, klik **Simpan (Tambah/Update)**. Kode Toko yang sudah ada akan memperbarui data toko tsb (bukan duplikat) — klik baris di tabel untuk memuat datanya ke form lebih dulu.
 3. **Import massal**: klik **Pilih File Excel**, pilih `Rekap_Omzet_Per_Toko_Bulanan.xlsx` (hanya sheet DAFTAR TOKO yang dibaca), klik **Import Excel**.
 4. **Hapus**: pilih baris, klik **Hapus Terpilih**. Toko yang sudah punya data rekap/prediksi tidak bisa dihapus.
+5. **Laporan Daftar Toko**: klik **Export PDF** untuk mengunduh daftar seluruh toko sebagai PDF siap cetak.
 
 ## 5. Kelola Master Metode Bayar (khusus Admin)
 
@@ -56,6 +57,7 @@ Data jenis pembayaran yang sah (Gopay, OVO, Kartu Debit, Cash, dll), dipakai unt
 2. **Tambah/Edit manual**: isi Kode, Nama Metode, Kategori, Urutan, centang Aktif, klik **Simpan (Tambah/Update)**. Nama Metode yang sudah ada akan memperbarui data metode tsb — klik baris di tabel untuk memuat datanya ke form lebih dulu.
 3. **Import massal**: klik **Pilih Master_Metode_Bayar.xlsx**, klik **Import Excel**.
 4. **Hapus**: pilih baris, klik **Hapus Terpilih**. Metode yang sudah punya data rekap tidak bisa dihapus.
+5. **Laporan Master Metode Bayar**: klik **Export PDF** untuk mengunduh daftar seluruh metode sebagai PDF siap cetak.
 
 > Lakukan langkah ini **sebelum** mengisi Kelola Rekap Transaksi Toko — nama metode di sini dipakai untuk mencocokkan kolom pada file rekap Excel.
 
@@ -72,7 +74,7 @@ Di sinilah sistem mulai menyerap data transaksional — sumber data yang dipakai
 1. Pilih Toko, Metode, Tahun, Bulan, isi Jumlah Transaksi, klik **Simpan (Tambah/Update)**. Kombinasi Toko+Metode+Tahun+Bulan yang sudah ada akan diperbarui — klik baris di tabel untuk memuat datanya ke form lebih dulu.
 2. **Hapus**: pilih baris, klik **Hapus Terpilih**.
 
-**Melihat data**: tabel utama di menu ini menampilkan seluruh rekap tersimpan, dengan filter **Tahun** (atau centang "Semua Tahun") + tombol **Tampilkan**.
+**Melihat data & Laporan**: tabel utama di menu ini menampilkan seluruh rekap tersimpan, dengan filter **Toko** dan **Tahun** (atau centang "Semua Tahun") + tombol **Tampilkan**. Klik **Export PDF** untuk mengunduh data yang sedang tampil (sesuai filter aktif) sebagai laporan PDF.
 
 ## 7. Proses & Lihat Prediksi
 
@@ -93,12 +95,32 @@ Fase inti/otak dari sistem — sangat bergantung pada selesainya pengisian data 
 ## 8. Riwayat / Laporan Prediksi & Penyerahan ke Kepala Divisi
 
 1. Buka menu **Riwayat / Laporan Prediksi**.
-2. Tabel menampilkan seluruh hasil prediksi yang pernah disimpan: waktu diproses, toko, periode target, jumlah data (n), nilai `a`/`b`, hasil prediksi, MAPE, dan siapa yang memprosesnya.
-3. Klik **Refresh** untuk memuat data terbaru.
+2. Tabel menampilkan seluruh hasil prediksi yang pernah disimpan: waktu diproses, toko, periode target, jumlah data (n), nilai `a`/`b`, hasil prediksi, MAPE, dan siapa yang memprosesnya. Gunakan filter **Toko** dan **Tahun Target** + tombol **Tampilkan** untuk mempersempit daftar.
+3. **Hapus**: pilih baris, klik **Hapus Terpilih** (ada konfirmasi) untuk membuang hasil prediksi yang salah/tidak relevan.
+4. **Laporan Riwayat**: klik **Export PDF** untuk mengunduh tabel yang sedang tampil (sesuai filter aktif) sebagai PDF.
+5. Klik **Refresh** untuk memuat data terbaru.
 
-Dipakai Admin/Staff untuk meninjau riwayat prediksi sebelum dicetak (**Export PDF** di menu Prediksi, bagian 7). Laporan PDF/cetak fisik kemudian diserahkan kepada **Kepala Divisi** — pihak eksternal (bukan pengguna sistem) — untuk kebutuhan pengambilan keputusan bisnis.
+Dipakai Admin/Staff untuk meninjau riwayat prediksi sebelum dicetak (**Export PDF** di menu Prediksi, bagian 7, atau laporan tabel di bagian ini). Laporan PDF/cetak fisik kemudian diserahkan kepada **Kepala Divisi** — pihak eksternal (bukan pengguna sistem) — untuk kebutuhan pengambilan keputusan bisnis.
 
-## 9. Logout
+## 9. Visualisasi Grafik Prediksi Omzet
+
+Menu ini menampilkan ulang grafik tren dari hasil prediksi yang sudah tersimpan di Riwayat — berguna untuk meninjau kembali sebuah hasil prediksi tanpa harus menjalankan ulang secara manual di menu Prediksi.
+
+1. Buka menu **Visualisasi Grafik Prediksi Omzet** — tabel menampilkan seluruh riwayat prediksi tersimpan.
+2. Klik salah satu baris — grafik trennya akan dibangun ulang (dihitung ulang dari data rekap saat ini, menggunakan toko/bulan/tahun yang tersimpan) dan ditampilkan di panel bawah.
+3. Klik **Export PDF** untuk mengunduh grafik + rincian hasil tersebut sebagai laporan PDF (format sama seperti Export PDF di menu Prediksi).
+
+> Jika data rekap historis untuk toko/bulan tersebut sudah berubah sejak prediksi ini disimpan (mis. dihapus/direvisi di Kelola Rekap Transaksi Toko), grafik mungkin tidak bisa dibangun ulang — sistem akan menampilkan peringatan.
+
+## 10. Laporan Gabungan
+
+Satu file PDF berisi 4 bagian sekaligus: Daftar Toko, Master Metode Bayar, Rekap Transaksi Toko, dan Riwayat Hasil Prediksi.
+
+1. Buka menu **Laporan Gabungan**.
+2. Pilih filter **Toko** dan **Tahun** (atau centang "Semua Tahun") — filter ini hanya berlaku untuk bagian Rekap Transaksi dan Riwayat Prediksi; bagian Daftar Toko dan Master Metode Bayar selalu ditampilkan lengkap.
+3. Klik **Export Laporan Gabungan (PDF)** → pilih lokasi simpan.
+
+## 11. Logout
 
 Setelah pekerjaan selesai, klik **Logout** di pojok kanan atas Dashboard. Jendela Dashboard tertutup dan kembali ke layar Login.
 
@@ -112,5 +134,5 @@ Setelah pekerjaan selesai, klik **Logout** di pojok kanan atas Dashboard. Jendel
 3. Login (Staff) -> Kelola Rekap Transaksi Toko: import/isi rekap bulanan per toko
 4. Login (Staff) -> Proses & Lihat Prediksi: pilih Toko + bulan/tahun target -> Simpan Hasil Prediksi
 5. Login (Staff) -> Export PDF -> cetak & serahkan ke Kepala Divisi untuk ditandatangani
-6. Riwayat / Laporan Prediksi -> tinjau riwayat sebelum periode berikutnya -> Logout
+6. Riwayat / Laporan Prediksi, Visualisasi Grafik, atau Laporan Gabungan -> tinjau sebelum periode berikutnya -> Logout
 ```

@@ -2,6 +2,8 @@ package com.theplayzone.prediksi.ui;
 
 import com.theplayzone.prediksi.dao.TokoDAO;
 import com.theplayzone.prediksi.model.Toko;
+import com.theplayzone.prediksi.model.User;
+import com.theplayzone.prediksi.service.PdfReportService;
 import com.theplayzone.prediksi.service.TokoImportService;
 
 import javax.swing.BorderFactory;
@@ -27,7 +29,9 @@ import java.util.List;
 /** Kelola Daftar Toko -- tambah/hapus manual, atau import massal dari file Excel (sheet DAFTAR TOKO). */
 public class KelolaDaftarTokoForm extends JFrame {
 
+    private final User user;
     private final TokoDAO tokoDAO = new TokoDAO();
+    private final PdfReportService pdfReportService = new PdfReportService();
     private final DefaultTableModel tableModel = new DefaultTableModel(
             new Object[]{"Kode Toko", "Nama Toko", "Lokasi Toko"}, 0) {
         @Override
@@ -43,8 +47,9 @@ public class KelolaDaftarTokoForm extends JFrame {
     private final JTextArea logArea = new JTextArea(4, 50);
     private File fileImport;
 
-    public KelolaDaftarTokoForm() {
+    public KelolaDaftarTokoForm(User user) {
         super("Kelola Daftar Toko");
+        this.user = user;
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(760, 560);
         setLocationRelativeTo(null);
@@ -96,11 +101,15 @@ public class KelolaDaftarTokoForm extends JFrame {
             }
         });
 
+        JButton btnExportPdf = new JButton("Export PDF");
+        btnExportPdf.addActionListener(e -> exportPdf());
+
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT));
         actions.add(btnSimpan);
         actions.add(btnHapus);
         actions.add(btnBersihkan);
         actions.add(btnRefresh);
+        actions.add(btnExportPdf);
 
         JPanel formImport = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel lblFile = new JLabel("Belum ada file dipilih.");
@@ -186,6 +195,25 @@ public class KelolaDaftarTokoForm extends JFrame {
             muatData();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Gagal menghapus (kemungkinan toko sudah punya data rekap/prediksi): " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportPdf() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("Laporan_Daftar_Toko.pdf"));
+        chooser.setFileFilter(new FileNameExtensionFilter("PDF Files (*.pdf)", "pdf"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File target = chooser.getSelectedFile();
+        if (!target.getName().toLowerCase().endsWith(".pdf")) {
+            target = new File(target.getParentFile(), target.getName() + ".pdf");
+        }
+        try {
+            pdfReportService.exportTabelToko(tokoDAO.findAll(), user, target);
+            JOptionPane.showMessageDialog(this, "Laporan PDF berhasil dibuat:\n" + target.getAbsolutePath(), "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Gagal membuat PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

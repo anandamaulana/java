@@ -40,35 +40,65 @@ public class PrediksiDAO {
     }
 
     public List<HasilPrediksi> findRiwayat() throws SQLException {
-        String sql = "SELECT hp.id_prediksi, hp.bulan_target, hp.tahun_target, hp.id_toko, hp.jumlah_data_n, " +
+        return findRiwayat(null, null);
+    }
+
+    /** idToko = null berarti semua toko (termasuk hasil agregat Semua Toko). tahunTarget = null berarti semua tahun. */
+    public List<HasilPrediksi> findRiwayat(Integer idToko, Integer tahunTarget) throws SQLException {
+        StringBuilder sql = new StringBuilder(
+                "SELECT hp.id_prediksi, hp.bulan_target, hp.tahun_target, hp.id_toko, hp.jumlah_data_n, " +
                 "hp.konstanta_a, hp.koefisien_b, hp.nilai_prediksi, hp.mape_persen, hp.id_user, " +
                 "hp.tanggal_proses, u.nama_lengkap, t.nama_toko FROM hasil_prediksi hp " +
                 "JOIN users u ON u.id_user = hp.id_user " +
-                "LEFT JOIN toko t ON t.id_toko = hp.id_toko " +
-                "ORDER BY hp.tanggal_proses DESC";
+                "LEFT JOIN toko t ON t.id_toko = hp.id_toko WHERE 1=1");
+        if (idToko != null) {
+            sql.append(" AND hp.id_toko = ?");
+        }
+        if (tahunTarget != null) {
+            sql.append(" AND hp.tahun_target = ?");
+        }
+        sql.append(" ORDER BY hp.tanggal_proses DESC");
+
         List<HasilPrediksi> list = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                HasilPrediksi h = new HasilPrediksi();
-                h.setIdPrediksi(rs.getInt("id_prediksi"));
-                h.setBulanTarget(rs.getInt("bulan_target"));
-                h.setTahunTarget(rs.getInt("tahun_target"));
-                int idToko = rs.getInt("id_toko");
-                h.setIdToko(rs.wasNull() ? null : idToko);
-                h.setNamaToko(rs.getString("nama_toko"));
-                h.setJumlahDataN(rs.getInt("jumlah_data_n"));
-                h.setKonstantaA(rs.getDouble("konstanta_a"));
-                h.setKoefisienB(rs.getDouble("koefisien_b"));
-                h.setNilaiPrediksi(rs.getDouble("nilai_prediksi"));
-                h.setMapePersen(rs.getDouble("mape_persen"));
-                h.setIdUser(rs.getInt("id_user"));
-                h.setTanggalProses(rs.getTimestamp("tanggal_proses").toLocalDateTime());
-                h.setNamaUser(rs.getString("nama_lengkap"));
-                list.add(h);
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            int idx = 1;
+            if (idToko != null) {
+                ps.setInt(idx++, idToko);
+            }
+            if (tahunTarget != null) {
+                ps.setInt(idx, tahunTarget);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    HasilPrediksi h = new HasilPrediksi();
+                    h.setIdPrediksi(rs.getInt("id_prediksi"));
+                    h.setBulanTarget(rs.getInt("bulan_target"));
+                    h.setTahunTarget(rs.getInt("tahun_target"));
+                    int idTokoRow = rs.getInt("id_toko");
+                    h.setIdToko(rs.wasNull() ? null : idTokoRow);
+                    h.setNamaToko(rs.getString("nama_toko"));
+                    h.setJumlahDataN(rs.getInt("jumlah_data_n"));
+                    h.setKonstantaA(rs.getDouble("konstanta_a"));
+                    h.setKoefisienB(rs.getDouble("koefisien_b"));
+                    h.setNilaiPrediksi(rs.getDouble("nilai_prediksi"));
+                    h.setMapePersen(rs.getDouble("mape_persen"));
+                    h.setIdUser(rs.getInt("id_user"));
+                    h.setTanggalProses(rs.getTimestamp("tanggal_proses").toLocalDateTime());
+                    h.setNamaUser(rs.getString("nama_lengkap"));
+                    list.add(h);
+                }
             }
         }
         return list;
+    }
+
+    public void delete(int idPrediksi) throws SQLException {
+        String sql = "DELETE FROM hasil_prediksi WHERE id_prediksi = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idPrediksi);
+            ps.executeUpdate();
+        }
     }
 }

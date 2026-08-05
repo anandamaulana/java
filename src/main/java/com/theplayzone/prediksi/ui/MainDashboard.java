@@ -25,7 +25,7 @@ public class MainDashboard extends JFrame {
         super("Dashboard - Prediksi Omzet The Play Zone");
         this.user = user;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(780, 520);
+        setSize(820, 640);
         setLocationRelativeTo(null);
         Image icon = AppIcon.windowIcon();
         if (icon != null) {
@@ -89,12 +89,14 @@ public class MainDashboard extends JFrame {
 
         if (isAdmin) {
             grid.add(menuCard("Kelola Data Pengguna", "Buat, edit, hapus akun Staff (khusus Admin)", () -> new KelolaUserForm(user).setVisible(true)));
-            grid.add(menuCard("Kelola Daftar Toko", "Data master cabang/toko (khusus Admin)", () -> new KelolaDaftarTokoForm().setVisible(true)));
-            grid.add(menuCard("Kelola Master Metode Bayar", "Data master jenis pembayaran (khusus Admin)", () -> new KelolaMasterMetodeBayarForm().setVisible(true)));
+            grid.add(menuCard("Kelola Daftar Toko", "Data master cabang/toko (khusus Admin)", () -> new KelolaDaftarTokoForm(user).setVisible(true)));
+            grid.add(menuCard("Kelola Master Metode Bayar", "Data master jenis pembayaran (khusus Admin)", () -> new KelolaMasterMetodeBayarForm(user).setVisible(true)));
         }
         grid.add(menuCard("Kelola Rekap Transaksi Toko", "Input/import rekap transaksi bulanan per toko x metode bayar", () -> new KelolaRekapTransaksiTokoForm(user).setVisible(true)));
         grid.add(menuCard("Proses & Lihat Prediksi Omzet", "Jalankan Regresi Linear untuk bulan/tahun target", () -> new PrediksiForm(user).setVisible(true)));
-        grid.add(menuCard("Riwayat / Laporan Prediksi", "Lihat seluruh hasil prediksi yang tersimpan", () -> new LaporanForm().setVisible(true)));
+        grid.add(menuCard("Riwayat / Laporan Prediksi", "Lihat seluruh hasil prediksi yang tersimpan", () -> new LaporanForm(user).setVisible(true)));
+        grid.add(menuCard("Visualisasi Grafik Prediksi Omzet", "Lihat ulang grafik tren dari hasil prediksi tersimpan", () -> new VisualisasiGrafikForm(user).setVisible(true)));
+        grid.add(menuCard("Laporan Gabungan", "Export PDF gabungan Toko + Metode Bayar + Rekap + Riwayat", () -> new LaporanGabunganForm(user).setVisible(true)));
 
         return wrapper;
     }

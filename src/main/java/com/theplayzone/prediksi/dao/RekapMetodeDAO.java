@@ -65,19 +65,30 @@ public class RekapMetodeDAO {
         return list;
     }
 
-    /** Semua baris rekap (join nama toko & metode), untuk ditampilkan di tabel. tahun = null berarti semua tahun. */
-    public List<RekapMetodeBaris> findAll(Integer tahun) throws SQLException {
-        String sql = "SELECT t.kode_toko, t.nama_toko, m.nama_metode, r.tahun, r.bulan, r.jumlah_transaksi " +
+    /** Semua baris rekap (join nama toko & metode), untuk ditampilkan di tabel. idToko/tahun = null berarti tanpa filter itu. */
+    public List<RekapMetodeBaris> findAll(Integer idToko, Integer tahun) throws SQLException {
+        StringBuilder sql = new StringBuilder(
+                "SELECT t.kode_toko, t.nama_toko, m.nama_metode, r.tahun, r.bulan, r.jumlah_transaksi " +
                 "FROM rekap_metode_bulanan r " +
                 "JOIN toko t ON t.id_toko = r.id_toko " +
-                "JOIN metode_bayar m ON m.id_metode = r.id_metode " +
-                (tahun != null ? "WHERE r.tahun = ? " : "") +
-                "ORDER BY t.kode_toko, r.tahun, r.bulan, m.urutan";
+                "JOIN metode_bayar m ON m.id_metode = r.id_metode WHERE 1=1");
+        if (idToko != null) {
+            sql.append(" AND r.id_toko = ?");
+        }
+        if (tahun != null) {
+            sql.append(" AND r.tahun = ?");
+        }
+        sql.append(" ORDER BY t.kode_toko, r.tahun, r.bulan, m.urutan");
+
         List<RekapMetodeBaris> list = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            int idx = 1;
+            if (idToko != null) {
+                ps.setInt(idx++, idToko);
+            }
             if (tahun != null) {
-                ps.setInt(1, tahun);
+                ps.setInt(idx, tahun);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
