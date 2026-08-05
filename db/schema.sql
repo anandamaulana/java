@@ -23,24 +23,6 @@ CREATE TABLE import_log (
     FOREIGN KEY (id_user) REFERENCES users(id_user)
 );
 
-CREATE TABLE transaksi_harian (
-    id_transaksi   BIGINT AUTO_INCREMENT PRIMARY KEY,
-    tanggal        DATE NOT NULL,
-    nominal        DECIMAL(15,2) NOT NULL,
-    metode_bayar   ENUM('cash','e_wallet','kartu_debit','kartu_kredit') DEFAULT 'cash',
-    id_import      INT NULL,
-    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_import) REFERENCES import_log(id_import)
-);
-
-CREATE TABLE omzet_bulanan (
-    id_omzet     INT AUTO_INCREMENT PRIMARY KEY,
-    tahun        SMALLINT NOT NULL,
-    bulan        TINYINT NOT NULL,             -- 1..12
-    total_omzet  DECIMAL(18,2) NOT NULL,
-    UNIQUE KEY uq_periode (tahun, bulan)
-);
-
 CREATE TABLE toko (
     id_toko     INT AUTO_INCREMENT PRIMARY KEY,
     kode_toko   VARCHAR(10) NOT NULL UNIQUE,
@@ -90,18 +72,13 @@ CREATE TABLE hasil_prediksi (
 );
 
 -- Seed user default
--- admin / admin123   (role: kepala_divisi)
--- operasional / opr123  (role: operasional)
+-- admin / admin123  (role: admin)
+-- staff / staff123  (role: staff)
 INSERT INTO users (username, password_hash, nama_lengkap, role) VALUES
 ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Administrator', 'admin'),
 ('staff', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'Staff Operasional', 'staff');
 
--- Contoh data historis omzet bulanan (opsional, boleh dihapus lalu diisi data riil via fitur Import Excel + Rekap)
-INSERT INTO omzet_bulanan (tahun, bulan, total_omzet) VALUES
-(2023, 1, 85000000), (2024, 1, 92500000), (2025, 1, 101000000),
-(2023, 2, 79000000), (2024, 2, 88250000), (2025, 2, 95400000);
-
--- Master metode bayar (15 metode riil, sesuai format Master_Metode_Bayar.xlsx). Bisa diimpor ulang lewat menu Import.
+-- Master metode bayar (15 metode riil, sesuai format Master_Metode_Bayar.xlsx). Bisa diimpor ulang lewat menu Kelola Master Metode Bayar.
 INSERT INTO metode_bayar (kode_metode, nama_metode, kategori, urutan, aktif) VALUES
 (1, 'Gopay', 'E-Wallet', 8, TRUE),
 (2, 'OVO', 'E-Wallet', 9, TRUE),
@@ -119,14 +96,14 @@ INSERT INTO metode_bayar (kode_metode, nama_metode, kategori, urutan, aktif) VAL
 (14, 'QR BRI', 'QR', 21, TRUE),
 (15, 'Cash', 'Cash', 22, TRUE);
 
--- Contoh 3 toko (sesuai sheet DAFTAR TOKO di Rekap_Omzet_Per_Toko_Bulanan.xlsx). Bisa diimpor ulang/ditambah lewat menu Import.
+-- Contoh 3 toko (sesuai sheet DAFTAR TOKO di Rekap_Omzet_Per_Toko_Bulanan.xlsx). Bisa diimpor ulang/ditambah lewat menu Kelola Daftar Toko.
 INSERT INTO toko (kode_toko, nama_toko, lokasi_toko) VALUES
 ('R 14', 'PS. KOPRO', 'JAKARTA'),
 ('R 20', 'CIPUTAT', 'TANGERANG SELATAN'),
 ('R 21', 'BEKASI', 'BEKASI');
 
 -- Contoh rekap transaksi bulanan (Januari, 3 tahun terakhir, metode Cash & Gopay) agar menu Prediksi bisa langsung dicoba.
--- Ganti/lengkapi dengan data riil via menu Import Rekap Toko Bulanan.
+-- Ganti/lengkapi dengan data riil via menu Kelola Rekap Transaksi Toko.
 INSERT INTO rekap_metode_bulanan (id_toko, id_metode, tahun, bulan, jumlah_transaksi) VALUES
 (1, 15, 2023, 1, 520), (1, 1, 2023, 1, 180),
 (1, 15, 2024, 1, 560), (1, 1, 2024, 1, 210),

@@ -5,6 +5,7 @@ import com.theplayzone.prediksi.dao.RekapMetodeDAO;
 import com.theplayzone.prediksi.dao.TokoDAO;
 import com.theplayzone.prediksi.koneksi.DatabaseConnection;
 import com.theplayzone.prediksi.model.MetodeBayar;
+import com.theplayzone.prediksi.model.Toko;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -25,12 +26,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Import daftar toko + rekap transaksi bulanan dari file Rekap_Omzet_Per_Toko_Bulanan.xlsx.
- * Struktur workbook:
- *   - sheet "DAFTAR TOKO": header baris 4, data mulai baris 5 (A=Kode Toko, B=Nama Toko, C=Lokasi Toko)
- *   - sheet per bulan ("Januari".."Desember"): header baris 4 (nama metode bayar per kolom mulai C),
- *     data mulai baris 5 (A=Kode Toko, kolom metode = jumlah transaksi bulan itu)
- * Metode bayar dicocokkan berdasarkan NAMA (harus sudah ada di tabel metode_bayar -- import Master Metode Bayar dulu).
+ * Import rekap transaksi bulanan dari sheet per bulan ("Januari".."Desember") pada file
+ * Rekap_Omzet_Per_Toko_Bulanan.xlsx. Header baris 4 (nama metode bayar per kolom mulai C),
+ * data mulai baris 5 (A = Kode Toko, kolom metode = jumlah transaksi bulan itu).
+ * Toko (dicocokkan via Kode Toko) dan Metode Bayar (dicocokkan via nama) harus SUDAH ADA --
+ * import lewat menu Kelola Daftar Toko / Kelola Master Metode Bayar terlebih dahulu.
  */
 public class RekapTokoImportService {
 
@@ -45,7 +45,6 @@ public class RekapTokoImportService {
     private final RekapMetodeDAO rekapMetodeDAO = new RekapMetodeDAO();
 
     public static class HasilImport {
-        public int jumlahToko;
         public int jumlahBaris;
         public int jumlahGagal;
         public final List<String> pesanGagal = new ArrayList<>();
@@ -60,14 +59,19 @@ public class RekapTokoImportService {
             metodeByNama.put(m.getNamaMetode().trim().toLowerCase(), m.getIdMetode());
         }
         if (metodeByNama.isEmpty()) {
-            throw new IllegalStateException("Master Metode Bayar masih kosong. Import Master Metode Bayar terlebih dahulu.");
+            throw new IllegalStateException("Master Metode Bayar masih kosong. Import lewat menu Kelola Master Metode Bayar dahulu.");
+        }
+
+        Map<String, Integer> tokoByKode = new HashMap<>();
+        for (Toko t : tokoDAO.findAll()) {
+            tokoByKode.put(t.getKodeToko(), t.getIdToko());
+        }
+        if (tokoByKode.isEmpty()) {
+            throw new IllegalStateException("Daftar Toko masih kosong. Import lewat menu Kelola Daftar Toko dahulu.");
         }
 
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
-
-            Map<String, Integer> tokoByKode = importDaftarToko(workbook, hasil);
-
             for (int bulan = 1; bulan <= 12; bulan++) {
                 Sheet sheet = workbook.getSheet(NAMA_BULAN[bulan - 1]);
                 if (sheet == null) {
@@ -79,36 +83,6 @@ public class RekapTokoImportService {
 
         updateLogImport(idImport, hasil.jumlahBaris, hasil.jumlahBaris > 0 ? "sukses" : "gagal");
         return hasil;
-    }
-
-    private Map<String, Integer> importDaftarToko(Workbook workbook, HasilImport hasil) throws SQLException {
-        Map<String, Integer> tokoByKode = new HashMap<>();
-        Sheet sheet = workbook.getSheet("DAFTAR TOKO");
-        if (sheet == null) {
-            throw new IllegalStateException("Sheet 'DAFTAR TOKO' tidak ditemukan di file.");
-        }
-        for (int i = BARIS_HEADER + 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            Cell kodeCell = row == null ? null : row.getCell(0);
-            if (kodeCell == null || kodeCell.toString().trim().isEmpty()) {
-                continue;
-            }
-            try {
-                String kodeToko = kodeCell.toString().trim();
-                String namaToko = teksSel(row.getCell(1));
-                String lokasiToko = teksSel(row.getCell(2));
-                if (namaToko.isEmpty()) {
-                    throw new IllegalArgumentException("Nama Toko kosong");
-                }
-                int idToko = tokoDAO.upsert(kodeToko, namaToko, lokasiToko.isEmpty() ? null : lokasiToko);
-                tokoByKode.put(kodeToko, idToko);
-                hasil.jumlahToko++;
-            } catch (Exception ex) {
-                hasil.jumlahGagal++;
-                hasil.pesanGagal.add("DAFTAR TOKO baris " + (row.getRowNum() + 1) + ": " + ex.getMessage());
-            }
-        }
-        return tokoByKode;
     }
 
     private void importSheetBulan(Sheet sheet, int bulan, int tahun, Map<String, Integer> tokoByKode,
@@ -137,7 +111,7 @@ public class RekapTokoImportService {
             if (idToko == null) {
                 hasil.jumlahGagal++;
                 hasil.pesanGagal.add(NAMA_BULAN[bulan - 1] + " baris " + (row.getRowNum() + 1) +
-                        ": kode toko '" + kodeToko + "' tidak ada di sheet DAFTAR TOKO");
+                        ": kode toko '" + kodeToko + "' belum terdaftar di Kelola Daftar Toko");
                 continue;
             }
             try {

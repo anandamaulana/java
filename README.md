@@ -14,18 +14,18 @@ src/main/resources/      # db.properties (konfigurasi koneksi database)
 src/main/java/com/theplayzone/prediksi/
 ├── Main.java             # Entry point aplikasi
 ├── koneksi/               # Koneksi JDBC
-├── model/                 # POJO (User, TransaksiHarian, OmzetBulanan, HasilPrediksi, Toko, MetodeBayar, dll.)
-├── dao/                   # Akses data (UserDAO, TransaksiDAO, PrediksiDAO, TokoDAO, MetodeBayarDAO, RekapMetodeDAO)
-├── service/                # Logika bisnis (RegresiLinearService, MapeEvaluator, ExcelImportService,
+├── model/                 # POJO (User, OmzetBulanan, HasilPrediksi, Toko, MetodeBayar, RekapMetodeBaris, dll.)
+├── dao/                   # Akses data (UserDAO, PrediksiDAO, TokoDAO, MetodeBayarDAO, RekapMetodeDAO)
+├── service/                # Logika bisnis (RegresiLinearService, MapeEvaluator, TokoImportService,
 │                           #   MasterMetodeBayarImportService, RekapTokoImportService, PdfReportService, AuthService)
-├── ui/                     # Form Swing (Login, Dashboard, Kelola User, Import, Kelola Transaksi, Import Rekap Toko, Prediksi, Laporan)
+├── ui/                     # Form Swing (Login, Dashboard, Kelola User/Toko/Metode Bayar/Rekap Transaksi, Prediksi, Laporan)
 └── util/                   # ChartHelper (JFreeChart)
 docs/
 ├── 01_Manual_Book.md       # Gambaran umum aplikasi
 ├── 02_Manual_Aplikasi.md   # Panduan penggunaan tiap menu
 ├── 03_Manual_Setup.md      # Panduan instalasi (JDK, XAMPP/Docker, build & jalankan)
 ├── 04_Manual_NetBeans.md   # Panduan khusus membuka/Run/Debug proyek di NetBeans
-├── 05_Format_Excel_Import.md  # Spesifikasi format Excel (Master Metode Bayar, Rekap Toko Bulanan, Import Data Transaksi)
+├── 05_Format_Excel_Import.md  # Spesifikasi format Excel (Master Metode Bayar, Rekap Toko Bulanan)
 └── pemodelan-uml.html      # Use Case / Activity / Sequence / Class diagram (host via GitHub Pages)
 ```
 

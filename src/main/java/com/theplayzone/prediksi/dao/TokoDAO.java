@@ -48,6 +48,15 @@ public class TokoDAO {
         return list;
     }
 
+    public void delete(int idToko) throws SQLException {
+        String sql = "DELETE FROM toko WHERE id_toko = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idToko);
+            ps.executeUpdate();
+        }
+    }
+
     public Integer findIdByKode(String kodeToko) throws SQLException {
         String sql = "SELECT id_toko FROM toko WHERE kode_toko = ?";
         try (Connection conn = DatabaseConnection.getConnection();

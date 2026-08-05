@@ -55,6 +55,24 @@ public class UserDAO {
         }
     }
 
+    /** Update nama_lengkap; password_hash hanya diperbarui jika passwordHashBaru tidak null. */
+    public void update(int idUser, String namaLengkap, String passwordHashBaru) throws SQLException {
+        String sql = passwordHashBaru != null
+                ? "UPDATE users SET nama_lengkap = ?, password_hash = ? WHERE id_user = ?"
+                : "UPDATE users SET nama_lengkap = ? WHERE id_user = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, namaLengkap);
+            if (passwordHashBaru != null) {
+                ps.setString(2, passwordHashBaru);
+                ps.setInt(3, idUser);
+            } else {
+                ps.setInt(2, idUser);
+            }
+            ps.executeUpdate();
+        }
+    }
+
     public void delete(int idUser) throws SQLException {
         String sql = "DELETE FROM users WHERE id_user = ?";
         try (Connection conn = DatabaseConnection.getConnection();

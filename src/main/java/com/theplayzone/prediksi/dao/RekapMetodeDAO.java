@@ -94,4 +94,20 @@ public class RekapMetodeDAO {
         }
         return list;
     }
+
+    /** Hapus satu baris rekap berdasarkan kode toko + nama metode + periode (dipakai form Kelola manual). */
+    public void delete(String kodeToko, String namaMetode, int tahun, int bulan) throws SQLException {
+        String sql = "DELETE r FROM rekap_metode_bulanan r " +
+                "JOIN toko t ON t.id_toko = r.id_toko " +
+                "JOIN metode_bayar m ON m.id_metode = r.id_metode " +
+                "WHERE t.kode_toko = ? AND m.nama_metode = ? AND r.tahun = ? AND r.bulan = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, kodeToko);
+            ps.setString(2, namaMetode);
+            ps.setInt(3, tahun);
+            ps.setInt(4, bulan);
+            ps.executeUpdate();
+        }
+    }
 }

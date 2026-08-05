@@ -88,11 +88,11 @@ public class MainDashboard extends JFrame {
         boolean isAdmin = "admin".equals(user.getRole());
 
         if (isAdmin) {
-            grid.add(menuCard("Kelola Data Pengguna", "Buat/hapus akun Staff (khusus Admin)", () -> new KelolaUserForm(user).setVisible(true)));
-            grid.add(menuCard("Import Data Transaksi (Excel)", "Unduh template, isi, lalu import data harian (legaci)", () -> new ImportDataForm(user).setVisible(true)));
-            grid.add(menuCard("Kelola Data Transaksi", "Tambah/lihat/hapus transaksi harian secara manual (legaci)", () -> new KelolaTransaksiForm().setVisible(true)));
+            grid.add(menuCard("Kelola Data Pengguna", "Buat, edit, hapus akun Staff (khusus Admin)", () -> new KelolaUserForm(user).setVisible(true)));
+            grid.add(menuCard("Kelola Daftar Toko", "Data master cabang/toko (khusus Admin)", () -> new KelolaDaftarTokoForm().setVisible(true)));
+            grid.add(menuCard("Kelola Master Metode Bayar", "Data master jenis pembayaran (khusus Admin)", () -> new KelolaMasterMetodeBayarForm().setVisible(true)));
         }
-        grid.add(menuCard("Import Rekap Toko Bulanan", "Import Master Metode Bayar & Rekap Omzet Per Toko Bulanan", () -> new ImportRekapTokoForm(user).setVisible(true)));
+        grid.add(menuCard("Kelola Rekap Transaksi Toko", "Input/import rekap transaksi bulanan per toko x metode bayar", () -> new KelolaRekapTransaksiTokoForm(user).setVisible(true)));
         grid.add(menuCard("Proses & Lihat Prediksi Omzet", "Jalankan Regresi Linear untuk bulan/tahun target", () -> new PrediksiForm(user).setVisible(true)));
         grid.add(menuCard("Riwayat / Laporan Prediksi", "Lihat seluruh hasil prediksi yang tersimpan", () -> new LaporanForm().setVisible(true)));
 

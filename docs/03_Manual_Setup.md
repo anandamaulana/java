@@ -86,7 +86,7 @@ Lihat `02_Manual_Aplikasi.md` untuk panduan pemakaian tiap menu.
 | `Gagal terhubung ke database` saat login | MySQL belum aktif | Pastikan modul MySQL di XAMPP hijau/running, atau `docker compose ps` menunjukkan container `mysql` sehat |
 | `Unknown database 'db_theplayzone'` | `schema.sql` belum diimport | Ulangi langkah 1A poin 4, atau pastikan `docker-entrypoint-initdb.d` memuat file saat container **pertama kali** dibuat (jika container lama sudah ada tanpa data, jalankan `docker compose down -v` lalu `docker compose up -d` untuk membuat ulang dari awal) |
 | Port 3306 sudah dipakai (bentrok XAMPP vs Docker) | Kedua jalur database aktif bersamaan | Gunakan **salah satu saja** — matikan MySQL di XAMPP jika memakai Docker, atau `docker compose down` jika memakai XAMPP |
-| `Data historis ... belum cukup untuk regresi` saat proses prediksi | Rekap transaksi toko untuk bulan/toko tsb kurang dari 2 tahun sebelumnya | Lengkapi data lewat menu **Import Rekap Toko Bulanan** |
+| `Data historis ... belum cukup untuk regresi` saat proses prediksi | Rekap transaksi toko untuk bulan/toko tsb kurang dari 2 tahun sebelumnya | Lengkapi data lewat menu **Kelola Rekap Transaksi Toko** |
 | `Table 'db_theplayzone.metode_bayar' doesn't exist` (atau `toko`/`rekap_metode_bulanan`) | Database dibuat sebelum fitur multi-toko ditambahkan | Import `db/migration_001_toko.sql` (lihat langkah 1A poin 4) |
 | `Data truncated for column 'role'` saat login akun lama, atau akun `operasional`/`kepala_divisi` tidak bisa login | Database dibuat sebelum role diubah menjadi Admin/Staff | Import `db/migration_002_admin_staff.sql` |
 | Karakter Rupiah/format aneh di hasil prediksi | Locale sistem operasi non-Indonesia | Tidak mempengaruhi perhitungan, hanya tampilan format mata uang |

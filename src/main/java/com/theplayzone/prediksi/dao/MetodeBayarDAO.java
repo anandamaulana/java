@@ -52,4 +52,24 @@ public class MetodeBayarDAO {
         }
         return list;
     }
+
+    public Integer findIdByNama(String namaMetode) throws SQLException {
+        String sql = "SELECT id_metode FROM metode_bayar WHERE nama_metode = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, namaMetode);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : null;
+            }
+        }
+    }
+
+    public void delete(int idMetode) throws SQLException {
+        String sql = "DELETE FROM metode_bayar WHERE id_metode = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idMetode);
+            ps.executeUpdate();
+        }
+    }
 }

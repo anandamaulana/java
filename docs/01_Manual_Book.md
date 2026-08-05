@@ -25,10 +25,10 @@ Output aplikasi berupa **angka rekomendasi prediksi (baseline)** beserta **grafi
 | Fitur | Deskripsi | Hak Akses |
 |---|---|---|
 | Login | Autentikasi pengguna berbasis username & password | Semua pengguna |
-| Kelola Data Pengguna | Membuat/menghapus akun Staff | Admin |
-| Import Rekap Toko Bulanan | Import Master Metode Bayar + Daftar Toko & rekap transaksi 12 bulan (sumber data Prediksi) | Admin, Staff |
-| Import Data Excel (legaci) | Mengimpor data transaksi harian dari file `.xlsx`, tidak dipakai Prediksi | Admin |
-| Kelola Data Transaksi (legaci) | Tambah/lihat/hapus data transaksi harian secara manual | Admin |
+| Kelola Data Pengguna | Membuat, mengedit, menghapus akun Staff | Admin |
+| Kelola Daftar Toko | Data master cabang/toko, manual atau import Excel massal | Admin |
+| Kelola Master Metode Bayar | Data master jenis pembayaran, manual atau import Excel massal | Admin |
+| Kelola Rekap Transaksi Toko | Input/edit/hapus rekap transaksi bulanan per toko x metode, manual atau import Excel massal (sumber data Prediksi) | Admin, Staff |
 | Proses Prediksi | Menjalankan algoritma Regresi Linear per toko/semua toko untuk bulan & tahun target | Admin, Staff |
 | Lihat Grafik Tren & Prediksi | Visualisasi data aktual, garis tren, dan titik prediksi | Admin, Staff |
 | Simpan Hasil Prediksi | Menyimpan hasil proses ke riwayat basis data | Admin, Staff |
@@ -37,8 +37,8 @@ Output aplikasi berupa **angka rekomendasi prediksi (baseline)** beserta **grafi
 
 ## 3. Peran Pengguna (Role)
 
-- **Admin** (`admin`) — mengelola akun Staff, dan bisa mengakses seluruh fitur (termasuk semua yang bisa dilakukan Staff serta menu legaci).
-- **Staff** (`staff`) — login, mengelola Master Metode Bayar & Rekap Transaksi Toko (Import Rekap Toko Bulanan), menjalankan & menyimpan proses prediksi, export laporan PDF.
+- **Admin** (`admin`) — superuser: mengelola akun Staff dan data master (Daftar Toko, Master Metode Bayar), plus bisa mengakses semua yang bisa dilakukan Staff.
+- **Staff** (`staff`) — login, mengelola Rekap Transaksi Toko, menjalankan & menyimpan proses prediksi, export laporan PDF.
 - **Kepala Divisi** — **bukan** peran login di sistem ini. Merupakan pihak eksternal yang menerima laporan PDF hasil prediksi (dicetak & ditandatangani secara fisik) sebagai dasar pengambilan keputusan strategis.
 
 ## 4. Struktur Dokumen Pendukung

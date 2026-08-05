@@ -1,14 +1,14 @@
 # Manual Aplikasi (Panduan Penggunaan)
 ## Aplikasi Prediksi Omzet The Play Zone
 
-Dokumen ini menjelaskan cara memakai setiap menu aplikasi. Pastikan environment sudah disiapkan mengikuti `03_Manual_Setup.md` sebelum mengikuti panduan ini.
+Dokumen ini menjelaskan cara memakai setiap menu aplikasi, mengikuti alur kerja operasional sistem (Login → Data Master → Rekap Transaksi → Prediksi → Laporan → Logout). Pastikan environment sudah disiapkan mengikuti `03_Manual_Setup.md` sebelum mengikuti panduan ini.
 
 ---
 
 ## 1. Login
 
 1. Jalankan aplikasi (lihat `03_Manual_Setup.md` untuk cara menjalankan).
-2. Isi **Username** dan **Password**.
+2. Isi **Username** dan **Password**. Sistem memvalidasi ke database dan mendistribusikan hak akses (Admin atau Staff) sebelum masuk ke Dashboard.
 3. Akun bawaan (seed) dari `db/schema.sql`:
 
    | Username | Password | Role |
@@ -20,101 +20,97 @@ Dokumen ini menjelaskan cara memakai setiap menu aplikasi. Pastikan environment 
 
 > Ganti password default ini sebelum digunakan secara produksi — lihat bagian *Keamanan* di `03_Manual_Setup.md`.
 
-## 2. Dashboard
+## 2. Dashboard & Peran Pengguna
 
-Ada dua peran pengguna. **Admin bukan Kepala Divisi** — Kepala Divisi adalah pihak eksternal yang menerima laporan PDF (lihat bagian 7), bukan pengguna sistem.
+**Admin bukan Kepala Divisi.** Kepala Divisi adalah pihak eksternal yang menerima laporan PDF (lihat bagian 6), bukan pengguna sistem.
 
-- **Admin**: bisa akses **semua menu**, termasuk yang khusus Admin: **Kelola Data Pengguna** (membuat/menghapus akun Staff), serta menu legaci Import Data Transaksi & Kelola Data Transaksi.
-- **Staff**: Login, Import Rekap Toko Bulanan, Proses & Lihat Prediksi, Riwayat/Laporan Prediksi.
+- **Admin** — superuser yang menyiapkan akses & data dasar: **Kelola Data Pengguna**, **Kelola Daftar Toko**, **Kelola Master Metode Bayar**, plus semua menu yang bisa diakses Staff.
+- **Staff** — operasional harian: **Kelola Rekap Transaksi Toko**, **Proses & Lihat Prediksi**, **Riwayat / Laporan Prediksi**.
 
-Tombol **Logout** di pojok kanan atas kembali ke layar Login.
+Tombol **Logout** di pojok kanan atas menutup sesi dan kembali ke layar Login.
 
 ## 3. Kelola Data Pengguna (khusus Admin)
 
+Admin bertindak sebagai superuser yang menyiapkan akses operator, sehingga operasional sistem dapat didelegasikan dengan aman.
+
 1. Buka menu **Kelola Data Pengguna** — tabel menampilkan seluruh akun (Admin & Staff).
 2. **Tambah akun Staff**: isi Username, Password, Nama Lengkap, klik **Tambah Akun Staff**. Akun baru otomatis berperan Staff (menu ini tidak membuat akun Admin lain).
-3. **Hapus akun**: pilih baris, klik **Hapus Terpilih**. Akun yang sedang login tidak bisa menghapus dirinya sendiri. Akun yang sudah pernah memproses/menyimpan prediksi atau import tidak bisa dihapus (dilindungi relasi data) — hapus riwayatnya dulu jika benar-benar perlu.
-4. Klik **Refresh** untuk memuat ulang data terbaru.
+3. **Edit akun**: klik baris di tabel — form terisi otomatis, tombol berubah jadi **Simpan Perubahan**. Ubah Nama Lengkap dan/atau isi Password baru (kosongkan Password jika tidak ingin menggantinya), lalu klik **Simpan Perubahan**. Klik **Form Baru** untuk batal edit.
+4. **Hapus akun**: pilih baris, klik **Hapus Terpilih**. Akun yang sedang login tidak bisa menghapus dirinya sendiri. Akun yang sudah pernah memproses/menyimpan prediksi atau import tidak bisa dihapus (dilindungi relasi data).
+5. Klik **Refresh** untuk memuat ulang data terbaru.
 
-## 4. Import Rekap Toko Bulanan (sumber data Prediksi)
+## 4. Kelola Daftar Toko (khusus Admin)
 
-Ini jalur import utama — data dari sinilah yang dipakai algoritma Regresi Linear di menu Prediksi. Detail lengkap format kedua file ada di `05_Format_Excel_Import.md`.
+Data master cabang/toko — variabel esensial untuk pelaporan dan pemisahan target prediksi per toko.
 
-1. Buka menu **Import Rekap Toko Bulanan**.
-2. Klik **Pilih Master_Metode_Bayar.xlsx**, pilih file master metode bayar, lalu klik **Import Metode Bayar**. Lakukan ini **sebelum** langkah berikutnya — nama metode di file ini dipakai untuk mencocokkan kolom di file rekap.
-3. Klik **Pilih Rekap_Omzet_Per_Toko_Bulanan.xlsx**, pilih file rekap toko. Isi **Tahun** data (satu tahun berlaku untuk seluruh 12 sheet bulan di file tersebut).
-4. Klik **Import Daftar Toko + Rekap**. Aplikasi akan mengimpor sheet DAFTAR TOKO (daftar cabang) lalu 12 sheet bulanan (Januari–Desember) sekaligus. Ringkasan hasil (jumlah toko, baris rekap berhasil/gagal) tampil di log.
-5. Import ulang dengan file yang sama (mis. setelah data direvisi) aman dilakukan — data lama akan ditimpa, bukan diduplikasi.
+1. Buka menu **Kelola Daftar Toko** — tabel menampilkan seluruh toko tersimpan.
+2. **Tambah/Edit manual**: isi Kode Toko, Nama Toko, Lokasi, klik **Simpan (Tambah/Update)**. Kode Toko yang sudah ada akan memperbarui data toko tsb (bukan duplikat) — klik baris di tabel untuk memuat datanya ke form lebih dulu.
+3. **Import massal**: klik **Pilih File Excel**, pilih `Rekap_Omzet_Per_Toko_Bulanan.xlsx` (hanya sheet DAFTAR TOKO yang dibaca), klik **Import Excel**.
+4. **Hapus**: pilih baris, klik **Hapus Terpilih**. Toko yang sudah punya data rekap/prediksi tidak bisa dihapus.
 
-**Melihat data yang sudah diimport**: di menu yang sama ada tab **Daftar Toko**, **Master Metode Bayar**, dan **Rekap Transaksi** (di sebelah tab "Log Import") — masing-masing menampilkan isi tabel database saat ini beserta tombol **Refresh**. Tab Rekap Transaksi punya filter Tahun (atau centang "Semua Tahun" untuk menampilkan semuanya).
+## 5. Kelola Master Metode Bayar (khusus Admin)
 
-> Untuk tahun berikutnya, siapkan workbook rekap baru (boleh salinan template dengan nilai diperbarui) dan ulangi langkah 3–4 dengan Tahun yang sesuai.
+Data jenis pembayaran yang sah (Gopay, OVO, Kartu Debit, Cash, dll), dipakai untuk mengkategorikan rekap transaksi berdasarkan metodenya.
 
-## 5. Import Data Transaksi (Excel) — pencatatan harian (opsional, khusus Admin)
+1. Buka menu **Kelola Master Metode Bayar** — tabel menampilkan seluruh metode tersimpan.
+2. **Tambah/Edit manual**: isi Kode, Nama Metode, Kategori, Urutan, centang Aktif, klik **Simpan (Tambah/Update)**. Nama Metode yang sudah ada akan memperbarui data metode tsb — klik baris di tabel untuk memuat datanya ke form lebih dulu.
+3. **Import massal**: klik **Pilih Master_Metode_Bayar.xlsx**, klik **Import Excel**.
+4. **Hapus**: pilih baris, klik **Hapus Terpilih**. Metode yang sudah punya data rekap tidak bisa dihapus.
 
-Digunakan untuk memasukkan arsip transaksi harian dari file spreadsheet accounting.
+> Lakukan langkah ini **sebelum** mengisi Kelola Rekap Transaksi Toko — nama metode di sini dipakai untuk mencocokkan kolom pada file rekap Excel.
 
-1. Buka menu **Import Data Transaksi (Excel)**.
-2. Klik **Unduh Template Excel** — muncul dialog Save, pilih lokasi penyimpanan (mis. Desktop), klik Save. Aplikasi akan menyalin file template `.xlsx` siap pakai ke lokasi tersebut (template ini dibundel di dalam aplikasi, tidak perlu file terpisah/internet).
-3. Buka file template yang baru diunduh, hapus baris contoh, isi dengan data transaksi asli dari accounting, lalu simpan.
-4. Kembali ke aplikasi, klik **Pilih File Excel (.xlsx)**, pilih file yang sudah diisi tadi.
-5. Format kolom file Excel (baris 1 = header, data mulai baris 2) — sudah sesuai bawaan template:
+## 6. Kelola Rekap Transaksi Toko (Admin & Staff)
 
-   | Kolom | Isi | Contoh |
-   |---|---|---|
-   | A | Tanggal (format `yyyy-MM-dd`) | 2025-01-15 |
-   | B | Nominal | 1500000 |
-   | C | Metode Bayar *(opsional)* | cash / e_wallet / kartu_debit / kartu_kredit |
+Di sinilah sistem mulai menyerap data transaksional — sumber data yang dipakai algoritma Regresi Linear di menu Prediksi. Detail lengkap format file Excel ada di `05_Format_Excel_Import.md`.
 
-6. Klik **Import ke Database** — hasil (jumlah baris berhasil/gagal) tampil di area log.
-7. Klik **Rekap ke Omzet Bulanan** — mengagregasi seluruh transaksi harian menjadi total omzet per bulan.
+**Cara Kerja (import massal)**:
+1. Pilih file `Rekap_Omzet_Per_Toko_Bulanan.xlsx`, isi **Tahun data** (satu tahun berlaku untuk seluruh 12 sheet bulan di file tersebut), klik **Import Excel (12 sheet bulan)**.
+2. Sistem membaca tiap sheet bulan (Januari–Desember yang ada di file), mencocokkan kolom ke Master Metode Bayar, lalu **mengagregasi** jumlah transaksi per toko per metode per bulan ke database. Import ulang dengan file yang sama aman dilakukan — data lama ditimpa, bukan diduplikasi.
+3. Kode Toko yang belum terdaftar di Kelola Daftar Toko akan gagal (dicatat di log) — lengkapi Daftar Toko dahulu.
 
-> **Catatan**: menu ini (dan hasil rekapnya) **tidak lagi dipakai oleh fitur Proses Prediksi** — sumber data prediksi sekarang dari menu *Import Rekap Toko Bulanan* (bagian 4). Menu ini tetap tersedia untuk pencatatan/arsip transaksi harian manual.
+**Cara Kerja (input/edit manual satu baris)**:
+1. Pilih Toko, Metode, Tahun, Bulan, isi Jumlah Transaksi, klik **Simpan (Tambah/Update)**. Kombinasi Toko+Metode+Tahun+Bulan yang sudah ada akan diperbarui — klik baris di tabel untuk memuat datanya ke form lebih dulu.
+2. **Hapus**: pilih baris, klik **Hapus Terpilih**.
 
-## 6. Kelola Data Transaksi (khusus Admin)
-
-Alternatif input manual (satu per satu) tanpa file Excel, atau untuk mengoreksi/menghapus data harian (lihat catatan di bagian 5 — tidak memengaruhi hasil Prediksi).
-
-1. Buka menu **Kelola Data Transaksi** — tabel menampilkan seluruh transaksi harian tersimpan.
-2. **Tambah data**: isi Tanggal (`yyyy-MM-dd`), Nominal, pilih Metode, klik **Tambah**.
-3. **Hapus data**: pilih baris pada tabel, klik **Hapus Terpilih**.
-4. Klik **Refresh** untuk memuat ulang data terbaru.
+**Melihat data**: tabel utama di menu ini menampilkan seluruh rekap tersimpan, dengan filter **Tahun** (atau centang "Semua Tahun") + tombol **Tampilkan**.
 
 ## 7. Proses & Lihat Prediksi
 
-Menu inti — menjalankan algoritma Regresi Linear atas data yang sudah diimport lewat **Import Rekap Toko Bulanan** (bagian 4). Bisa diakses Admin maupun Staff.
+Fase inti/otak dari sistem — sangat bergantung pada selesainya pengisian data di bagian 4–6. Bisa diakses Admin maupun Staff.
 
-1. Pilih **Toko** (toko tertentu, atau "Semua Toko" untuk agregat seluruh cabang), **Bulan Target**, dan **Tahun Target**.
-2. Klik **Proses Prediksi**. Sistem mengambil total transaksi bulan yang sama dari tahun-tahun sebelumnya (Year-over-Year) untuk toko/agregat terpilih, lalu menghitung:
+1. Pilih **Toko** (toko tertentu, atau "Semua Toko" untuk agregat seluruh cabang sekaligus), **Bulan Target**, dan **Tahun Target**.
+2. Klik **Proses Prediksi**. Sistem menarik data "Total Transaksi Bulanan" historis (hasil bagian 6) untuk bulan yang sama di tahun-tahun sebelumnya (Year-over-Year), lalu menjalankan persamaan Regresi Linear untuk menghitung:
    - Konstanta (`a`) dan koefisien (`b`)
    - Persamaan garis tren `Y = a + bX`
    - Nilai prediksi jumlah transaksi
    - Tingkat error (**MAPE**)
 3. Hasil angka tampil di panel atas; grafik tren (data aktual, garis regresi, titik prediksi) tampil di panel bawah.
-4. Klik **Simpan Hasil Prediksi** untuk mencatatnya ke riwayat.
-5. Klik **Export PDF** untuk mengunduh laporan hasil prediksi ini sebagai file PDF (kop logo The Play Zone, toko target, rincian angka, grafik tren, dan area tanda tangan "Dibuat oleh, Staff" / "Mengetahui, Kepala Divisi The Play Zone" untuk ditandatangani manual setelah dicetak).
+4. Klik **Simpan Hasil Prediksi** untuk mengarsipkannya ke riwayat.
+5. Klik **Export PDF** untuk mengunduh laporan siap cetak (kop logo The Play Zone, toko target, rincian angka, grafik tren, dan area tanda tangan "Dibuat oleh, Staff" / "Mengetahui, Kepala Divisi The Play Zone").
 
-**Catatan**: minimal dibutuhkan 2 tahun data historis untuk bulan & toko yang sama sebelum tahun target. Jika data belum cukup, sistem menampilkan peringatan — lengkapi data lewat menu **Import Rekap Toko Bulanan** terlebih dahulu.
+**Catatan**: minimal dibutuhkan 2 tahun data historis untuk bulan & toko yang sama sebelum tahun target. Jika data belum cukup, sistem menampilkan peringatan — lengkapi data lewat menu **Kelola Rekap Transaksi Toko** terlebih dahulu.
 
-## 8. Riwayat / Laporan Prediksi
+## 8. Riwayat / Laporan Prediksi & Penyerahan ke Kepala Divisi
 
 1. Buka menu **Riwayat / Laporan Prediksi**.
 2. Tabel menampilkan seluruh hasil prediksi yang pernah disimpan: waktu diproses, toko, periode target, jumlah data (n), nilai `a`/`b`, hasil prediksi, MAPE, dan siapa yang memprosesnya.
 3. Klik **Refresh** untuk memuat data terbaru.
 
-Dipakai Admin/Staff untuk meninjau riwayat prediksi sebelum dicetak (Export PDF) dan diserahkan ke **Kepala Divisi** — pihak eksternal (bukan pengguna sistem) yang memakainya sebagai bahan evaluasi dan pengambilan keputusan target operasional.
+Dipakai Admin/Staff untuk meninjau riwayat prediksi sebelum dicetak (**Export PDF** di menu Prediksi, bagian 7). Laporan PDF/cetak fisik kemudian diserahkan kepada **Kepala Divisi** — pihak eksternal (bukan pengguna sistem) — untuk kebutuhan pengambilan keputusan bisnis.
+
+## 9. Logout
+
+Setelah pekerjaan selesai, klik **Logout** di pojok kanan atas Dashboard. Jendela Dashboard tertutup dan kembali ke layar Login.
 
 ---
 
 ## Alur Kerja yang Disarankan (End-to-End)
 
 ```
-Login (Admin)
-   -> Kelola Data Pengguna: buat akun Staff
-Login (Staff)
-   -> Import Rekap Toko Bulanan: Master Metode Bayar, lalu Daftar Toko + Rekap 12 bulan
-   -> Proses & Lihat Prediksi (pilih Toko, bulan/tahun target)
-   -> Simpan Hasil Prediksi
-   -> Export PDF -> cetak & serahkan ke Kepala Divisi untuk ditandatangani
-   -> Riwayat / Laporan Prediksi -> tinjau riwayat sebelum periode berikutnya
+1. Login (Admin) -> Kelola Data Pengguna: buat akun Staff
+2. Login (Admin) -> Kelola Daftar Toko & Kelola Master Metode Bayar: siapkan data master
+3. Login (Staff) -> Kelola Rekap Transaksi Toko: import/isi rekap bulanan per toko
+4. Login (Staff) -> Proses & Lihat Prediksi: pilih Toko + bulan/tahun target -> Simpan Hasil Prediksi
+5. Login (Staff) -> Export PDF -> cetak & serahkan ke Kepala Divisi untuk ditandatangani
+6. Riwayat / Laporan Prediksi -> tinjau riwayat sebelum periode berikutnya -> Logout
 ```

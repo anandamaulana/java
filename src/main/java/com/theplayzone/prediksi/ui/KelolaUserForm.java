@@ -21,7 +21,7 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.util.List;
 
-/** Kelola Data Pengguna -- khusus Admin. Membuat & menghapus akun Staff. */
+/** Kelola Data Pengguna -- khusus Admin. Membuat, mengedit, & menghapus akun Staff. */
 public class KelolaUserForm extends JFrame {
 
     private final User adminAktif;
@@ -38,6 +38,10 @@ public class KelolaUserForm extends JFrame {
     private final JTextField txtUsername = new JTextField(14);
     private final JTextField txtNamaLengkap = new JTextField(18);
     private final JPasswordField txtPassword = new JPasswordField(14);
+    private final JButton btnSimpan = new JButton("Tambah Akun Staff");
+    private final JLabel lblHintPassword = new JLabel("(wajib diisi)");
+
+    private Integer idUserEdit;
 
     public KelolaUserForm(User adminAktif) {
         super("Kelola Data Pengguna");
@@ -70,22 +74,31 @@ public class KelolaUserForm extends JFrame {
         formAkun.add(txtUsername);
         formAkun.add(new JLabel("Password:"));
         formAkun.add(txtPassword);
+        formAkun.add(lblHintPassword);
 
         JPanel formNama = new JPanel(new FlowLayout(FlowLayout.LEFT));
         formNama.add(new JLabel("Nama Lengkap:"));
         formNama.add(txtNamaLengkap);
 
-        JButton btnTambah = new JButton("Tambah Akun Staff");
-        AppTheme.terapkanTombolUtama(btnTambah);
-        btnTambah.addActionListener(e -> tambahStaff());
+        AppTheme.terapkanTombolUtama(btnSimpan);
+        btnSimpan.addActionListener(e -> simpanUser());
         JButton btnHapus = new JButton("Hapus Terpilih");
         btnHapus.addActionListener(e -> hapusUser());
+        JButton btnBersihkan = new JButton("Form Baru");
+        btnBersihkan.addActionListener(e -> bersihkanForm());
         JButton btnRefresh = new JButton("Refresh");
         btnRefresh.addActionListener(e -> muatData());
 
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && table.getSelectedRow() >= 0) {
+                isiFormDariBaris(table.getSelectedRow());
+            }
+        });
+
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        actions.add(btnTambah);
+        actions.add(btnSimpan);
         actions.add(btnHapus);
+        actions.add(btnBersihkan);
         actions.add(btnRefresh);
 
         JPanel south = new JPanel(new GridLayout(3, 1));
@@ -109,6 +122,35 @@ public class KelolaUserForm extends JFrame {
         }
     }
 
+    private void isiFormDariBaris(int row) {
+        idUserEdit = (int) tableModel.getValueAt(row, 0);
+        txtUsername.setText(String.valueOf(tableModel.getValueAt(row, 1)));
+        txtUsername.setEnabled(false);
+        txtNamaLengkap.setText(String.valueOf(tableModel.getValueAt(row, 2)));
+        txtPassword.setText("");
+        lblHintPassword.setText("(kosongkan jika password tidak diubah)");
+        btnSimpan.setText("Simpan Perubahan");
+    }
+
+    private void bersihkanForm() {
+        idUserEdit = null;
+        txtUsername.setText("");
+        txtUsername.setEnabled(true);
+        txtNamaLengkap.setText("");
+        txtPassword.setText("");
+        lblHintPassword.setText("(wajib diisi)");
+        btnSimpan.setText("Tambah Akun Staff");
+        table.clearSelection();
+    }
+
+    private void simpanUser() {
+        if (idUserEdit != null) {
+            editUser();
+        } else {
+            tambahStaff();
+        }
+    }
+
     private void tambahStaff() {
         String username = txtUsername.getText().trim();
         String namaLengkap = txtNamaLengkap.getText().trim();
@@ -120,12 +162,26 @@ public class KelolaUserForm extends JFrame {
         }
         try {
             userDAO.insert(username, PasswordUtil.sha256(password), namaLengkap, "staff");
-            txtUsername.setText("");
-            txtNamaLengkap.setText("");
-            txtPassword.setText("");
+            bersihkanForm();
             muatData();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Gagal menambah akun: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void editUser() {
+        String namaLengkap = txtNamaLengkap.getText().trim();
+        String password = new String(txtPassword.getPassword());
+        if (namaLengkap.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama Lengkap wajib diisi.", "Validasi", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        try {
+            userDAO.update(idUserEdit, namaLengkap, password.isEmpty() ? null : PasswordUtil.sha256(password));
+            bersihkanForm();
+            muatData();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Gagal menyimpan perubahan: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -142,6 +198,7 @@ public class KelolaUserForm extends JFrame {
         }
         try {
             userDAO.delete(idUser);
+            bersihkanForm();
             muatData();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Gagal menghapus: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
