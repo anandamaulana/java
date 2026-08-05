@@ -43,7 +43,7 @@ public class KelolaUserForm extends JFrame {
         super("Kelola Data Pengguna");
         this.adminAktif = adminAktif;
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(680, 480);
+        setSize(680, 520);
         setLocationRelativeTo(null);
         Image icon = AppIcon.windowIcon();
         if (icon != null) {
@@ -65,13 +65,15 @@ public class KelolaUserForm extends JFrame {
 
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
-        JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        form.add(new JLabel("Username:"));
-        form.add(txtUsername);
-        form.add(new JLabel("Password:"));
-        form.add(txtPassword);
-        form.add(new JLabel("Nama Lengkap:"));
-        form.add(txtNamaLengkap);
+        JPanel formAkun = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        formAkun.add(new JLabel("Username:"));
+        formAkun.add(txtUsername);
+        formAkun.add(new JLabel("Password:"));
+        formAkun.add(txtPassword);
+
+        JPanel formNama = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        formNama.add(new JLabel("Nama Lengkap:"));
+        formNama.add(txtNamaLengkap);
 
         JButton btnTambah = new JButton("Tambah Akun Staff");
         AppTheme.terapkanTombolUtama(btnTambah);
@@ -86,8 +88,9 @@ public class KelolaUserForm extends JFrame {
         actions.add(btnHapus);
         actions.add(btnRefresh);
 
-        JPanel south = new JPanel(new GridLayout(2, 1));
-        south.add(form);
+        JPanel south = new JPanel(new GridLayout(3, 1));
+        south.add(formAkun);
+        south.add(formNama);
         south.add(actions);
 
         panel.add(south, BorderLayout.SOUTH);
