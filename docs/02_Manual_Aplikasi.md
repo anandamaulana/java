@@ -71,6 +71,7 @@ Menu inti — menjalankan algoritma Regresi Linear.
    - Tingkat error (**MAPE**)
 3. Hasil angka tampil di panel atas; grafik tren (data aktual, garis regresi, titik prediksi) tampil di panel bawah.
 4. *(Khusus Staf Operasional)* klik **Simpan Hasil Prediksi** untuk mencatatnya ke riwayat.
+5. Klik **Export PDF** untuk mengunduh laporan hasil prediksi ini sebagai file PDF (kop logo The Play Zone, rincian angka, grafik tren, dan area tanda tangan "Dibuat oleh" / "Mengetahui — Kepala Divisi" untuk ditandatangani manual setelah dicetak).
 
 **Catatan**: minimal dibutuhkan 2 tahun data historis untuk bulan yang sama sebelum tahun target. Jika data belum cukup, sistem menampilkan peringatan — lengkapi data lewat menu Import/Kelola Data Transaksi terlebih dahulu.
 

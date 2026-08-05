@@ -15,6 +15,10 @@ public final class ChartHelper {
     }
 
     public static ChartPanel buatPanelTren(PrediksiResult hasil) {
+        return new ChartPanel(buatChart(hasil));
+    }
+
+    public static JFreeChart buatChart(PrediksiResult hasil) {
         XYSeries dataAktual = new XYSeries("Omzet Aktual (YoY)");
         XYSeries garisTren = new XYSeries("Garis Tren Regresi");
 
@@ -43,6 +47,6 @@ public final class ChartHelper {
                 true, true, false
         );
 
-        return new ChartPanel(chart);
+        return chart;
     }
 }

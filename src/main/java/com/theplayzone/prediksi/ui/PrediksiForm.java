@@ -3,12 +3,14 @@ package com.theplayzone.prediksi.ui;
 import com.theplayzone.prediksi.dao.PrediksiDAO;
 import com.theplayzone.prediksi.model.PrediksiResult;
 import com.theplayzone.prediksi.model.User;
+import com.theplayzone.prediksi.service.PdfReportService;
 import com.theplayzone.prediksi.service.RegresiLinearService;
 import com.theplayzone.prediksi.util.ChartHelper;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -18,10 +20,12 @@ import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Image;
+import java.io.File;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.Locale;
@@ -42,6 +46,8 @@ public class PrediksiForm extends JFrame {
     private final JTextArea txtHasil = new JTextArea(6, 40);
     private final JPanel chartContainer = new JPanel(new BorderLayout());
     private final JButton btnSimpan = new JButton("Simpan Hasil Prediksi");
+    private final JButton btnExportPdf = new JButton("Export PDF");
+    private final PdfReportService pdfReportService = new PdfReportService();
 
     private PrediksiResult hasilTerakhir;
 
@@ -89,6 +95,10 @@ public class PrediksiForm extends JFrame {
             form.add(btnSimpan);
         }
 
+        btnExportPdf.setEnabled(false);
+        btnExportPdf.addActionListener(e -> exportPdf());
+        form.add(btnExportPdf);
+
         txtHasil.setEditable(false);
         txtHasil.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
 
@@ -118,9 +128,11 @@ public class PrediksiForm extends JFrame {
             chartContainer.revalidate();
             chartContainer.repaint();
             btnSimpan.setEnabled(true);
+            btnExportPdf.setEnabled(true);
         } catch (IllegalStateException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Data Tidak Cukup", JOptionPane.WARNING_MESSAGE);
             btnSimpan.setEnabled(false);
+            btnExportPdf.setEnabled(false);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Gagal memproses prediksi: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -138,6 +150,34 @@ public class PrediksiForm extends JFrame {
         sb.append("Prediksi Omzet           : ").append(rupiah.format(hasil.getNilaiPrediksi())).append("\n");
         sb.append(String.format("MAPE (tingkat error)    : %.2f%%%n", hasil.getMapePersen()));
         txtHasil.setText(sb.toString());
+    }
+
+    private void exportPdf() {
+        if (hasilTerakhir == null) {
+            return;
+        }
+        JFileChooser chooser = new JFileChooser();
+        String namaDefault = "Laporan_Prediksi_" + NAMA_BULAN[hasilTerakhir.getBulanTarget() - 1]
+                + "_" + hasilTerakhir.getTahunTarget() + ".pdf";
+        chooser.setSelectedFile(new File(namaDefault));
+        chooser.setFileFilter(new FileNameExtensionFilter("PDF Files (*.pdf)", "pdf"));
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File target = chooser.getSelectedFile();
+        if (!target.getName().toLowerCase().endsWith(".pdf")) {
+            target = new File(target.getParentFile(), target.getName() + ".pdf");
+        }
+
+        try {
+            pdfReportService.exportHasilPrediksi(hasilTerakhir, user, target);
+            JOptionPane.showMessageDialog(this, "Laporan PDF berhasil dibuat:\n" + target.getAbsolutePath(),
+                    "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Gagal membuat PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void simpanHasil() {
