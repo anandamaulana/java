@@ -8,20 +8,24 @@ Aplikasi desktop Java + MySQL untuk memprediksi omzet transaksi Counter The Play
 pom.xml                  # Konfigurasi Maven (dependency & build)
 docker-compose.yml       # Opsi menjalankan MySQL via Docker (alternatif XAMPP)
 db/schema.sql            # Skema database + seed akun & contoh data
+db/migration_001_toko.sql  # Migrasi tambahan untuk database lama (toko/metode_bayar/rekap)
 src/main/resources/      # db.properties (konfigurasi koneksi database)
 src/main/java/com/theplayzone/prediksi/
 ├── Main.java             # Entry point aplikasi
 ├── koneksi/               # Koneksi JDBC
-├── model/                 # POJO (User, TransaksiHarian, OmzetBulanan, HasilPrediksi, dll.)
-├── dao/                   # Akses data (UserDAO, TransaksiDAO, PrediksiDAO)
-├── service/                # Logika bisnis (RegresiLinearService, MapeEvaluator, ExcelImportService, AuthService)
-├── ui/                     # Form Swing (Login, Dashboard, Import, Kelola Transaksi, Prediksi, Laporan)
+├── model/                 # POJO (User, TransaksiHarian, OmzetBulanan, HasilPrediksi, Toko, MetodeBayar, dll.)
+├── dao/                   # Akses data (UserDAO, TransaksiDAO, PrediksiDAO, TokoDAO, MetodeBayarDAO, RekapMetodeDAO)
+├── service/                # Logika bisnis (RegresiLinearService, MapeEvaluator, ExcelImportService,
+│                           #   MasterMetodeBayarImportService, RekapTokoImportService, PdfReportService, AuthService)
+├── ui/                     # Form Swing (Login, Dashboard, Import, Kelola Transaksi, Import Rekap Toko, Prediksi, Laporan)
 └── util/                   # ChartHelper (JFreeChart)
 docs/
 ├── 01_Manual_Book.md       # Gambaran umum aplikasi
 ├── 02_Manual_Aplikasi.md   # Panduan penggunaan tiap menu
 ├── 03_Manual_Setup.md      # Panduan instalasi (JDK, XAMPP/Docker, build & jalankan)
-└── 04_Manual_NetBeans.md   # Panduan khusus membuka/Run/Debug proyek di NetBeans
+├── 04_Manual_NetBeans.md   # Panduan khusus membuka/Run/Debug proyek di NetBeans
+├── 05_Format_Excel_Import.md  # Spesifikasi format Excel (Master Metode Bayar, Rekap Toko Bulanan, Import Data Transaksi)
+└── pemodelan-uml.html      # Use Case / Activity / Sequence / Class diagram (host via GitHub Pages)
 ```
 
 ## Mulai Cepat

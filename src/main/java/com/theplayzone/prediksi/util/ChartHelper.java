@@ -19,7 +19,7 @@ public final class ChartHelper {
     }
 
     public static JFreeChart buatChart(PrediksiResult hasil) {
-        XYSeries dataAktual = new XYSeries("Omzet Aktual (YoY)");
+        XYSeries dataAktual = new XYSeries("Transaksi Aktual (YoY)");
         XYSeries garisTren = new XYSeries("Garis Tren Regresi");
 
         for (TitikRegresi titik : hasil.getTitikList()) {
@@ -39,9 +39,9 @@ public final class ChartHelper {
         dataset.addSeries(titikPrediksi);
 
         JFreeChart chart = ChartFactory.createXYLineChart(
-                "Tren Omzet & Prediksi Regresi Linear",
+                "Tren & Prediksi Jumlah Transaksi (Regresi Linear)",
                 "Urutan Periode (Tahun ke-n)",
-                "Total Omzet (Rp)",
+                "Jumlah Transaksi",
                 dataset,
                 PlotOrientation.VERTICAL,
                 true, true, false

@@ -90,6 +90,7 @@ public class MainDashboard extends JFrame {
         if (isOperasional) {
             grid.add(menuCard("Import Data Transaksi (Excel)", "Unduh template, isi, lalu import data harian", () -> new ImportDataForm(user).setVisible(true)));
             grid.add(menuCard("Kelola Data Transaksi", "Tambah/lihat/hapus transaksi harian secara manual", () -> new KelolaTransaksiForm().setVisible(true)));
+            grid.add(menuCard("Import Rekap Toko Bulanan", "Import Master Metode Bayar & Rekap Omzet Per Toko Bulanan", () -> new ImportRekapTokoForm(user).setVisible(true)));
         }
         grid.add(menuCard("Proses & Lihat Prediksi Omzet", "Jalankan Regresi Linear untuk bulan/tahun target", () -> new PrediksiForm(user).setVisible(true)));
         grid.add(menuCard("Riwayat / Laporan Prediksi", "Lihat seluruh hasil prediksi yang tersimpan", () -> new LaporanForm().setVisible(true)));

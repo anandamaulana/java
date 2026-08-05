@@ -1,7 +1,9 @@
 package com.theplayzone.prediksi.ui;
 
 import com.theplayzone.prediksi.dao.PrediksiDAO;
+import com.theplayzone.prediksi.dao.TokoDAO;
 import com.theplayzone.prediksi.model.PrediksiResult;
+import com.theplayzone.prediksi.model.Toko;
 import com.theplayzone.prediksi.model.User;
 import com.theplayzone.prediksi.service.PdfReportService;
 import com.theplayzone.prediksi.service.RegresiLinearService;
@@ -26,9 +28,7 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Image;
 import java.io.File;
-import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.util.Locale;
 
 public class PrediksiForm extends JFrame {
 
@@ -40,8 +40,10 @@ public class PrediksiForm extends JFrame {
     private final User user;
     private final RegresiLinearService regresiService = new RegresiLinearService();
     private final PrediksiDAO prediksiDAO = new PrediksiDAO();
+    private final TokoDAO tokoDAO = new TokoDAO();
 
     private final JComboBox<String> cmbBulan = new JComboBox<>(NAMA_BULAN);
+    private final JComboBox<Object> cmbToko = new JComboBox<>();
     private final JSpinner spnTahun;
     private final JTextArea txtHasil = new JTextArea(6, 40);
     private final JPanel chartContainer = new JPanel(new BorderLayout());
@@ -66,6 +68,18 @@ public class PrediksiForm extends JFrame {
         spnTahun = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
 
         initUI();
+        muatDaftarToko();
+    }
+
+    private void muatDaftarToko() {
+        cmbToko.addItem("Semua Toko");
+        try {
+            for (Toko t : tokoDAO.findAll()) {
+                cmbToko.addItem(t);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Gagal memuat daftar toko: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void initUI() {
@@ -78,6 +92,8 @@ public class PrediksiForm extends JFrame {
         nav.add(btnKembali);
 
         JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        form.add(new JLabel("Toko:"));
+        form.add(cmbToko);
         form.add(new JLabel("Bulan Target:"));
         form.add(cmbBulan);
         form.add(new JLabel("Tahun Target:"));
@@ -118,9 +134,15 @@ public class PrediksiForm extends JFrame {
     private void prosesPrediksi() {
         int bulan = cmbBulan.getSelectedIndex() + 1;
         int tahun = (Integer) spnTahun.getValue();
+        Object tokoTerpilih = cmbToko.getSelectedItem();
+        Integer idToko = (tokoTerpilih instanceof Toko) ? ((Toko) tokoTerpilih).getIdToko() : null;
+        String namaTokoLabel = (tokoTerpilih instanceof Toko)
+                ? ((Toko) tokoTerpilih).getKodeToko() + " - " + ((Toko) tokoTerpilih).getNamaToko()
+                : "Semua Toko";
 
         try {
-            PrediksiResult hasil = regresiService.prediksi(bulan, tahun);
+            PrediksiResult hasil = regresiService.prediksi(bulan, tahun, idToko);
+            hasil.setNamaToko(namaTokoLabel);
             hasilTerakhir = hasil;
             tampilkanHasil(hasil);
             chartContainer.removeAll();
@@ -139,15 +161,15 @@ public class PrediksiForm extends JFrame {
     }
 
     private void tampilkanHasil(PrediksiResult hasil) {
-        NumberFormat rupiah = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
         StringBuilder sb = new StringBuilder();
+        sb.append("Toko                    : ").append(hasil.getNamaToko()).append("\n");
         sb.append("Target periode          : ").append(NAMA_BULAN[hasil.getBulanTarget() - 1]).append(" ").append(hasil.getTahunTarget()).append("\n");
         sb.append("Jumlah data historis (n) : ").append(hasil.getJumlahDataN()).append(" tahun (Year-over-Year)\n");
         sb.append(String.format("Konstanta (a)           : %.4f%n", hasil.getKonstantaA()));
         sb.append(String.format("Koefisien (b)           : %.4f%n", hasil.getKoefisienB()));
         sb.append("Persamaan                : Y = ").append(String.format("%.2f", hasil.getKonstantaA()))
                 .append(" + ").append(String.format("%.2f", hasil.getKoefisienB())).append(" * X\n");
-        sb.append("Prediksi Omzet           : ").append(rupiah.format(hasil.getNilaiPrediksi())).append("\n");
+        sb.append("Prediksi Jumlah Transaksi: ").append(String.format("%,.0f", hasil.getNilaiPrediksi())).append("\n");
         sb.append(String.format("MAPE (tingkat error)    : %.2f%%%n", hasil.getMapePersen()));
         txtHasil.setText(sb.toString());
     }

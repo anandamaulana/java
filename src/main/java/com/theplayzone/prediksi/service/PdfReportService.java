@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -104,13 +103,14 @@ public class PdfReportService {
 
     private void tambahJudul(Document document, PrediksiResult hasil) throws Exception {
         Font fontJudul = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, HITAM);
-        Paragraph judul = new Paragraph("LAPORAN HASIL PREDIKSI OMZET", fontJudul);
+        Paragraph judul = new Paragraph("LAPORAN HASIL PREDIKSI TRANSAKSI", fontJudul);
         judul.setAlignment(Element.ALIGN_CENTER);
         document.add(judul);
 
         Font fontSub = FontFactory.getFont(FontFactory.HELVETICA, 11, Color.DARK_GRAY);
+        String toko = hasil.getNamaToko() == null ? "Semua Toko" : hasil.getNamaToko();
         Paragraph sub = new Paragraph(
-                "Periode Target: " + NAMA_BULAN[hasil.getBulanTarget() - 1] + " " + hasil.getTahunTarget(), fontSub);
+                toko + " — Periode Target: " + NAMA_BULAN[hasil.getBulanTarget() - 1] + " " + hasil.getTahunTarget(), fontSub);
         sub.setAlignment(Element.ALIGN_CENTER);
         sub.setSpacingAfter(16f);
         document.add(sub);
@@ -128,8 +128,6 @@ public class PdfReportService {
     }
 
     private void tambahDetailHasil(Document document, PrediksiResult hasil) throws Exception {
-        NumberFormat rupiah = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
-
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
         table.setWidths(new float[]{2f, 3f});
@@ -138,12 +136,13 @@ public class PdfReportService {
         Font fontLabel = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, HITAM);
         Font fontValue = FontFactory.getFont(FontFactory.HELVETICA, 10, HITAM);
 
+        baris(table, "Toko", hasil.getNamaToko() == null ? "Semua Toko" : hasil.getNamaToko(), fontLabel, fontValue);
         baris(table, "Jumlah Data Historis (n)", hasil.getJumlahDataN() + " tahun (Year-over-Year)", fontLabel, fontValue);
         baris(table, "Konstanta (a)", String.format(Locale.US, "%.4f", hasil.getKonstantaA()), fontLabel, fontValue);
         baris(table, "Koefisien (b)", String.format(Locale.US, "%.4f", hasil.getKoefisienB()), fontLabel, fontValue);
         baris(table, "Persamaan Regresi", "Y = " + String.format(Locale.US, "%.2f", hasil.getKonstantaA())
                 + " + " + String.format(Locale.US, "%.2f", hasil.getKoefisienB()) + " * X", fontLabel, fontValue);
-        baris(table, "Prediksi Omzet", rupiah.format(hasil.getNilaiPrediksi()), fontLabel, fontValue);
+        baris(table, "Prediksi Jumlah Transaksi", String.format(Locale.US, "%,.0f", hasil.getNilaiPrediksi()), fontLabel, fontValue);
         baris(table, "MAPE (Tingkat Error)", String.format(Locale.US, "%.2f%%", hasil.getMapePersen()), fontLabel, fontValue);
 
         document.add(table);

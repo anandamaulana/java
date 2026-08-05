@@ -6,6 +6,8 @@ import java.util.List;
 public class PrediksiResult {
     private int bulanTarget;
     private int tahunTarget;
+    private Integer idToko;
+    private String namaToko;
     private int jumlahDataN;
     private double konstantaA;
     private double koefisienB;
@@ -18,6 +20,12 @@ public class PrediksiResult {
 
     public int getTahunTarget() { return tahunTarget; }
     public void setTahunTarget(int tahunTarget) { this.tahunTarget = tahunTarget; }
+
+    public Integer getIdToko() { return idToko; }
+    public void setIdToko(Integer idToko) { this.idToko = idToko; }
+
+    public String getNamaToko() { return namaToko; }
+    public void setNamaToko(String namaToko) { this.namaToko = namaToko; }
 
     public int getJumlahDataN() { return jumlahDataN; }
     public void setJumlahDataN(int jumlahDataN) { this.jumlahDataN = jumlahDataN; }

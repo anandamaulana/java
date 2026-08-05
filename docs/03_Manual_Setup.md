@@ -27,6 +27,7 @@ Panduan ini mencakup dua jalur database yang bisa dipilih salah satu: **XAMPP** 
 3. Buka `http://localhost/phpmyadmin`.
 4. Klik tab **Import** → pilih file `db/schema.sql` dari folder proyek ini → klik **Go**.
    - Ini otomatis membuat database `db_theplayzone`, seluruh tabel, dan 2 akun contoh.
+   - **Database yang sudah ada dari versi lama** (sebelum fitur multi-toko): jangan import ulang `schema.sql` (akan gagal karena tabel sudah ada). Import `db/migration_001_toko.sql` saja lewat cara yang sama — ini menambahkan tabel `toko`/`metode_bayar`/`rekap_metode_bulanan` tanpa menghapus data yang sudah ada.
 5. Konfigurasi default di `src/main/resources/db.properties` sudah cocok dengan XAMPP (`root` tanpa password). Tidak perlu diubah kecuali konfigurasi MySQL di komputer client berbeda.
 
 ## 1B. Setup Database via Docker (Alternatif)

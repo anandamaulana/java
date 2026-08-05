@@ -15,6 +15,8 @@ public class HasilPrediksi {
     private int idUser;
     private LocalDateTime tanggalProses;
     private String namaUser;
+    private Integer idToko;
+    private String namaToko;
 
     public int getIdPrediksi() { return idPrediksi; }
     public void setIdPrediksi(int idPrediksi) { this.idPrediksi = idPrediksi; }
@@ -48,4 +50,10 @@ public class HasilPrediksi {
 
     public String getNamaUser() { return namaUser; }
     public void setNamaUser(String namaUser) { this.namaUser = namaUser; }
+
+    public Integer getIdToko() { return idToko; }
+    public void setIdToko(Integer idToko) { this.idToko = idToko; }
+
+    public String getNamaToko() { return namaToko; }
+    public void setNamaToko(String namaToko) { this.namaToko = namaToko; }
 }

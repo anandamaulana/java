@@ -25,7 +25,7 @@ public class LaporanForm extends JFrame {
 
     private final PrediksiDAO prediksiDAO = new PrediksiDAO();
     private final DefaultTableModel tableModel = new DefaultTableModel(
-            new Object[]{"Diproses", "Target", "n", "a", "b", "Prediksi Omzet", "MAPE (%)", "Oleh"}, 0) {
+            new Object[]{"Diproses", "Toko", "Target", "n", "a", "b", "Prediksi Transaksi", "MAPE (%)", "Oleh"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
             return false;
@@ -74,11 +74,12 @@ public class LaporanForm extends JFrame {
             for (HasilPrediksi h : list) {
                 tableModel.addRow(new Object[]{
                         h.getTanggalProses(),
+                        h.getNamaToko() == null ? "Semua Toko" : h.getNamaToko(),
                         NAMA_BULAN[h.getBulanTarget() - 1] + " " + h.getTahunTarget(),
                         h.getJumlahDataN(),
                         String.format("%.2f", h.getKonstantaA()),
                         String.format("%.2f", h.getKoefisienB()),
-                        String.format("%,.2f", h.getNilaiPrediksi()),
+                        String.format("%,.0f", h.getNilaiPrediksi()),
                         String.format("%.2f", h.getMapePersen()),
                         h.getNamaUser()
                 });
