@@ -7,6 +7,7 @@ import com.theplayzone.prediksi.model.MetodeBayar;
 import com.theplayzone.prediksi.model.RekapMetodeBaris;
 import com.theplayzone.prediksi.model.Toko;
 import com.theplayzone.prediksi.model.User;
+import com.theplayzone.prediksi.service.DetailTransaksiTokoImportService;
 import com.theplayzone.prediksi.service.PdfReportService;
 import com.theplayzone.prediksi.service.RekapTokoImportService;
 
@@ -65,17 +66,22 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
 
     private final JComboBox<Object> cmbTokoFilter = new JComboBox<>();
     private final JCheckBox chkSemuaTahun = new JCheckBox("Semua Tahun", true);
-    private final JSpinner spnTahunFilter;
+    private final JSpinner spnTahunDari;
+    private final JSpinner spnTahunSampai;
 
     private final JSpinner spnTahunImport;
-    private final JTextArea logArea = new JTextArea(4, 50);
     private File fileImport;
+
+    private File fileDetail;
+    private final JLabel lblFileDetail = new JLabel("Belum ada file dipilih.");
+
+    private final JTextArea logArea = new JTextArea(4, 50);
 
     public KelolaRekapTransaksiTokoForm(User user) {
         super("Kelola Rekap Transaksi Toko");
         this.user = user;
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(880, 660);
+        setSize(920, 720);
         setLocationRelativeTo(null);
         Image icon = AppIcon.windowIcon();
         if (icon != null) {
@@ -83,7 +89,8 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         }
         int tahunSekarang = LocalDate.now().getYear();
         spnTahun = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
-        spnTahunFilter = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
+        spnTahunDari = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
+        spnTahunSampai = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
         spnTahunImport = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
         initUI();
         muatPilihan();
@@ -102,11 +109,17 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         JPanel filter = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filter.add(new JLabel("Toko:"));
         filter.add(cmbTokoFilter);
-        chkSemuaTahun.addActionListener(e -> spnTahunFilter.setEnabled(!chkSemuaTahun.isSelected()));
-        spnTahunFilter.setEnabled(false);
+        chkSemuaTahun.addActionListener(e -> {
+            spnTahunDari.setEnabled(!chkSemuaTahun.isSelected());
+            spnTahunSampai.setEnabled(!chkSemuaTahun.isSelected());
+        });
+        spnTahunDari.setEnabled(false);
+        spnTahunSampai.setEnabled(false);
         filter.add(chkSemuaTahun);
-        filter.add(new JLabel("Tahun:"));
-        filter.add(spnTahunFilter);
+        filter.add(new JLabel("Tahun Dari:"));
+        filter.add(spnTahunDari);
+        filter.add(new JLabel("Sampai:"));
+        filter.add(spnTahunSampai);
         JButton btnTampilkan = new JButton("Tampilkan");
         btnTampilkan.addActionListener(e -> muatData());
         filter.add(btnTampilkan);
@@ -163,6 +176,7 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
                 lblFile.setText(fileImport.getName());
             }
         });
+        formImport.add(new JLabel("Import konsolidasi (semua toko):"));
         formImport.add(btnPilihFile);
         formImport.add(lblFile);
         formImport.add(new JLabel("Tahun data:"));
@@ -171,12 +185,30 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         btnImport.addActionListener(e -> doImport());
         formImport.add(btnImport);
 
+        JPanel formDetail = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        formDetail.add(new JLabel("Upload Detail Transaksi (1 toko x 1 metode x 1 bulan):"));
+        JButton btnPilihDetail = new JButton("Pilih File Detail");
+        btnPilihDetail.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                fileDetail = chooser.getSelectedFile();
+                lblFileDetail.setText(fileDetail.getName());
+            }
+        });
+        formDetail.add(btnPilihDetail);
+        formDetail.add(lblFileDetail);
+        JButton btnUploadDetail = new JButton("Upload & Akumulasi");
+        btnUploadDetail.addActionListener(e -> uploadDetail());
+        formDetail.add(btnUploadDetail);
+
         logArea.setEditable(false);
 
-        JPanel south = new JPanel(new GridLayout(3, 1));
+        JPanel south = new JPanel(new GridLayout(4, 1));
         south.add(formManual);
         south.add(actions);
         south.add(formImport);
+        south.add(formDetail);
 
         JPanel southWrap = new JPanel(new BorderLayout(0, 8));
         southWrap.add(south, BorderLayout.NORTH);
@@ -212,11 +244,18 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         return (sel instanceof Toko) ? ((Toko) sel).getIdToko() : null;
     }
 
+    private Integer tahunDariTerpilih() {
+        return chkSemuaTahun.isSelected() ? null : (Integer) spnTahunDari.getValue();
+    }
+
+    private Integer tahunSampaiTerpilih() {
+        return chkSemuaTahun.isSelected() ? null : (Integer) spnTahunSampai.getValue();
+    }
+
     private void muatData() {
         tableModel.setRowCount(0);
         try {
-            Integer tahun = chkSemuaTahun.isSelected() ? null : (Integer) spnTahunFilter.getValue();
-            List<RekapMetodeBaris> list = rekapMetodeDAO.findAll(idTokoFilterTerpilih(), tahun);
+            List<RekapMetodeBaris> list = rekapMetodeDAO.findAll(idTokoFilterTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
             for (RekapMetodeBaris b : list) {
                 tableModel.addRow(new Object[]{b.getKodeToko(), b.getNamaToko(), b.getNamaMetode(),
                         b.getTahun(), NAMA_BULAN[b.getBulan() - 1], b.getJumlahTransaksi()});
@@ -239,12 +278,11 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         }
         Object tokoSel = cmbTokoFilter.getSelectedItem();
         String labelToko = (tokoSel instanceof Toko) ? ((Toko) tokoSel).getKodeToko() + " - " + ((Toko) tokoSel).getNamaToko() : "Semua Toko";
-        String labelTahun = chkSemuaTahun.isSelected() ? "Semua Tahun" : String.valueOf(spnTahunFilter.getValue());
-        String filterLabel = "Toko: " + labelToko + " | Tahun: " + labelTahun;
+        String labelPeriode = chkSemuaTahun.isSelected() ? "Semua Tahun" : (spnTahunDari.getValue() + " s.d. " + spnTahunSampai.getValue());
+        String filterLabel = "Toko: " + labelToko + " | Periode: " + labelPeriode;
 
         try {
-            Integer tahun = chkSemuaTahun.isSelected() ? null : (Integer) spnTahunFilter.getValue();
-            List<RekapMetodeBaris> list = rekapMetodeDAO.findAll(idTokoFilterTerpilih(), tahun);
+            List<RekapMetodeBaris> list = rekapMetodeDAO.findAll(idTokoFilterTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
             pdfReportService.exportTabelRekap(list, filterLabel, user, target);
             JOptionPane.showMessageDialog(this, "Laporan PDF berhasil dibuat:\n" + target.getAbsolutePath(), "Sukses", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
@@ -287,7 +325,7 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         int bulan = cmbBulan.getSelectedIndex() + 1;
         int jumlah = (Integer) spnJumlah.getValue();
         try {
-            // upsert: kombinasi toko+metode+tahun+bulan baru -> insert, yang sudah ada -> update jumlah
+            // upsert: kombinasi toko+metode+tahun+bulan baru -> insert, yang sudah ada -> update jumlah (timpa)
             rekapMetodeDAO.upsertJumlah(toko.getIdToko(), metode.getIdMetode(), tahun, bulan, jumlah, null);
             muatData();
         } catch (Exception ex) {
@@ -334,6 +372,31 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
             muatData();
         } catch (Exception ex) {
             logArea.append("Gagal import: " + ex.getMessage() + "\n");
+        }
+    }
+
+    private void uploadDetail() {
+        if (fileDetail == null) {
+            JOptionPane.showMessageDialog(this, "Pilih file detail transaksi terlebih dahulu.", "Validasi", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Toko toko = (Toko) cmbToko.getSelectedItem();
+        MetodeBayar metode = (MetodeBayar) cmbMetode.getSelectedItem();
+        if (toko == null || metode == null) {
+            JOptionPane.showMessageDialog(this, "Toko dan Metode (di form manual atas) wajib dipilih dulu sebelum upload detail.", "Validasi", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int tahun = (Integer) spnTahun.getValue();
+        int bulan = cmbBulan.getSelectedIndex() + 1;
+        try {
+            DetailTransaksiTokoImportService service = new DetailTransaksiTokoImportService();
+            int jumlahBaris = service.hitungJumlahTransaksi(fileDetail);
+            rekapMetodeDAO.tambahJumlah(toko.getIdToko(), metode.getIdMetode(), tahun, bulan, jumlahBaris, null);
+            logArea.append("Upload detail berhasil: " + jumlahBaris + " transaksi diakumulasikan ke " +
+                    toko.getKodeToko() + " / " + metode.getNamaMetode() + " / " + NAMA_BULAN[bulan - 1] + " " + tahun + ".\n");
+            muatData();
+        } catch (Exception ex) {
+            logArea.append("Gagal upload detail: " + ex.getMessage() + "\n");
         }
     }
 }

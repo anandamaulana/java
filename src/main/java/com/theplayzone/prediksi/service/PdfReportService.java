@@ -180,6 +180,52 @@ public class PdfReportService {
         }
     }
 
+    /** Rekapitulasi Prediksi Serentak: tabel semua toko + grafik batang perbandingan, dalam satu file. */
+    public void exportRekapitulasiSerentak(List<PrediksiResult> hasilPerToko, int bulanTarget, int tahunTarget,
+                                            User user, File target) throws IOException {
+        Document document = new Document(PageSize.A4, 42, 42, 36, 42);
+        try (FileOutputStream fos = new FileOutputStream(target)) {
+            PdfWriter.getInstance(document, fos);
+            document.open();
+
+            tambahKop(document);
+            String labelPeriode = NAMA_BULAN[bulanTarget - 1] + " " + tahunTarget;
+            tambahJudulGenerik(document, "LAPORAN REKAPITULASI PREDIKSI SERENTAK",
+                    "Periode Target: " + labelPeriode + " -- " + hasilPerToko.size() + " toko");
+            tambahInfoProses(document, user);
+
+            List<String[]> baris = new ArrayList<>();
+            for (PrediksiResult r : hasilPerToko) {
+                baris.add(new String[]{
+                        r.getNamaToko(),
+                        String.valueOf(r.getJumlahDataN()),
+                        String.format(Locale.US, "%.2f", r.getKonstantaA()),
+                        String.format(Locale.US, "%.2f", r.getKoefisienB()),
+                        String.format(Locale.US, "%,.0f", r.getNilaiPrediksi()),
+                        String.format(Locale.US, "%.2f%%", r.getMapePersen())
+                });
+            }
+            tambahTabelData(document, new String[]{"Toko", "n", "a", "b", "Prediksi", "MAPE"}, baris);
+
+            if (!hasilPerToko.isEmpty()) {
+                JFreeChart chart = com.theplayzone.prediksi.util.ChartHelper.buatChartPerbandingan(hasilPerToko, labelPeriode);
+                BufferedImage bufferedImage = chart.createBufferedImage(480, 300);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(bufferedImage, "png", baos);
+                Image chartImage = Image.getInstance(baos.toByteArray());
+                chartImage.scaleToFit(480, 300);
+                chartImage.setAlignment(Element.ALIGN_CENTER);
+                chartImage.setSpacingAfter(24f);
+                document.add(chartImage);
+            }
+
+            tambahTandaTangan(document);
+            document.close();
+        } catch (Exception ex) {
+            throw new IOException("Gagal membuat PDF: " + ex.getMessage(), ex);
+        }
+    }
+
     private void buatDokumenTabel(File target, String judul, String subJudul, User user, String[] headers,
                                    java.util.function.Supplier<List<String[]>> penyedia) throws IOException {
         Document document = new Document(PageSize.A4, 42, 42, 36, 42);

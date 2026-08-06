@@ -15,11 +15,17 @@ public class MetodeBayarDAO {
 
     /** Insert metode baru, atau perbarui kategori/urutan/aktif jika nama_metode sudah ada. Mengembalikan id_metode. */
     public int upsert(int kodeMetode, String namaMetode, String kategori, int urutan, boolean aktif) throws SQLException {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return upsert(conn, kodeMetode, namaMetode, kategori, urutan, aktif);
+        }
+    }
+
+    /** Sama seperti upsert(...), memakai Connection eksternal (untuk transaksi atomik). */
+    public int upsert(Connection conn, int kodeMetode, String namaMetode, String kategori, int urutan, boolean aktif) throws SQLException {
         String sql = "INSERT INTO metode_bayar (kode_metode, nama_metode, kategori, urutan, aktif) VALUES (?,?,?,?,?) " +
                 "ON DUPLICATE KEY UPDATE kode_metode = VALUES(kode_metode), kategori = VALUES(kategori), " +
                 "urutan = VALUES(urutan), aktif = VALUES(aktif), id_metode = LAST_INSERT_ID(id_metode)";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, kodeMetode);
             ps.setString(2, namaMetode);
             ps.setString(3, kategori);

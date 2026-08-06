@@ -25,7 +25,7 @@ public class MainDashboard extends JFrame {
         super("Dashboard - Prediksi Omzet The Play Zone");
         this.user = user;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(820, 640);
+        setSize(860, 760);
         setLocationRelativeTo(null);
         Image icon = AppIcon.windowIcon();
         if (icon != null) {
@@ -61,6 +61,10 @@ public class MainDashboard extends JFrame {
 
         header.add(left, BorderLayout.WEST);
 
+        JButton btnGantiPassword = new JButton("Ganti Password");
+        btnGantiPassword.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnGantiPassword.addActionListener(e -> new GantiPasswordForm(user).setVisible(true));
+
         JButton btnLogout = new JButton("Logout");
         btnLogout.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLogout.addActionListener(e -> {
@@ -70,6 +74,7 @@ public class MainDashboard extends JFrame {
         JPanel right = new JPanel();
         right.setBackground(AppTheme.PUTIH);
         right.setBorder(new EmptyBorder(0, 0, 0, 16));
+        right.add(btnGantiPassword);
         right.add(btnLogout);
         header.add(right, BorderLayout.EAST);
 
@@ -94,9 +99,10 @@ public class MainDashboard extends JFrame {
         }
         grid.add(menuCard("Kelola Rekap Transaksi Toko", "Input/import rekap transaksi bulanan per toko x metode bayar", () -> new KelolaRekapTransaksiTokoForm(user).setVisible(true)));
         grid.add(menuCard("Proses & Lihat Prediksi Omzet", "Jalankan Regresi Linear untuk bulan/tahun target", () -> new PrediksiForm(user).setVisible(true)));
+        grid.add(menuCard("Proses Prediksi Serentak", "Jalankan Regresi Linear ke semua toko sekaligus (looping otomatis)", () -> new PrediksiSerentakForm(user).setVisible(true)));
         grid.add(menuCard("Riwayat / Laporan Prediksi", "Lihat seluruh hasil prediksi yang tersimpan", () -> new LaporanForm(user).setVisible(true)));
         grid.add(menuCard("Visualisasi Grafik Prediksi Omzet", "Lihat ulang grafik tren dari hasil prediksi tersimpan", () -> new VisualisasiGrafikForm(user).setVisible(true)));
-        grid.add(menuCard("Laporan Gabungan", "Export PDF gabungan Toko + Metode Bayar + Rekap + Riwayat", () -> new LaporanGabunganForm(user).setVisible(true)));
+        grid.add(menuCard("Kelola Data Laporan", "Pilih kategori laporan, filter, preview, lalu export PDF", () -> new KelolaDataLaporanForm(user).setVisible(true)));
 
         return wrapper;
     }

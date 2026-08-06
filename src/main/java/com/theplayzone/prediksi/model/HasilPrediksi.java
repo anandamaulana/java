@@ -2,7 +2,7 @@ package com.theplayzone.prediksi.model;
 
 import java.time.LocalDateTime;
 
-/** Representasi baris tabel hasil_prediksi, dilengkapi nama pengguna (join) untuk keperluan tampilan laporan. */
+/** Representasi baris tabel log_prediksi, dilengkapi nama pengguna (join) untuk keperluan tampilan laporan. */
 public class HasilPrediksi {
     private int idPrediksi;
     private int bulanTarget;

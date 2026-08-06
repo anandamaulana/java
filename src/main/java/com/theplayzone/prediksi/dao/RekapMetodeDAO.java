@@ -15,17 +15,53 @@ import java.util.List;
 /** Akses data rekap_metode_bulanan (hasil import Rekap_Omzet_Per_Toko_Bulanan.xlsx). */
 public class RekapMetodeDAO {
 
-    /** Insert/update jumlah transaksi satu toko x metode x periode. */
+    /** Insert/update (timpa) jumlah transaksi satu toko x metode x periode -- dipakai import rekap konsolidasi. */
     public void upsertJumlah(int idToko, int idMetode, int tahun, int bulan, int jumlahTransaksi, Integer idImport) throws SQLException {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            upsertJumlah(conn, idToko, idMetode, tahun, bulan, jumlahTransaksi, idImport);
+        }
+    }
+
+    /** Sama seperti {@link #upsertJumlah(int, int, int, int, int, Integer)}, memakai Connection eksternal (untuk transaksi atomik). */
+    public void upsertJumlah(Connection conn, int idToko, int idMetode, int tahun, int bulan, int jumlahTransaksi, Integer idImport) throws SQLException {
         String sql = "INSERT INTO rekap_metode_bulanan (id_toko, id_metode, tahun, bulan, jumlah_transaksi, id_import) " +
                 "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE jumlah_transaksi = VALUES(jumlah_transaksi), id_import = VALUES(id_import)";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idToko);
             ps.setInt(2, idMetode);
             ps.setInt(3, tahun);
             ps.setInt(4, bulan);
             ps.setInt(5, jumlahTransaksi);
+            if (idImport == null) {
+                ps.setNull(6, java.sql.Types.INTEGER);
+            } else {
+                ps.setInt(6, idImport);
+            }
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Insert, atau AKUMULASI (tambahkan ke nilai yang sudah ada) jika kombinasi toko x metode x periode
+     * sudah ada -- dipakai upload Detail Transaksi per Toko & Metode (menjumlahkan baris transaksi baru
+     * ke total yang sudah tercatat, bukan menimpanya).
+     */
+    public void tambahJumlah(int idToko, int idMetode, int tahun, int bulan, int tambahan, Integer idImport) throws SQLException {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            tambahJumlah(conn, idToko, idMetode, tahun, bulan, tambahan, idImport);
+        }
+    }
+
+    /** Sama seperti {@link #tambahJumlah(int, int, int, int, int, Integer)}, memakai Connection eksternal. */
+    public void tambahJumlah(Connection conn, int idToko, int idMetode, int tahun, int bulan, int tambahan, Integer idImport) throws SQLException {
+        String sql = "INSERT INTO rekap_metode_bulanan (id_toko, id_metode, tahun, bulan, jumlah_transaksi, id_import) " +
+                "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE jumlah_transaksi = jumlah_transaksi + VALUES(jumlah_transaksi), id_import = VALUES(id_import)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idToko);
+            ps.setInt(2, idMetode);
+            ps.setInt(3, tahun);
+            ps.setInt(4, bulan);
+            ps.setInt(5, tambahan);
             if (idImport == null) {
                 ps.setNull(6, java.sql.Types.INTEGER);
             } else {
@@ -65,8 +101,11 @@ public class RekapMetodeDAO {
         return list;
     }
 
-    /** Semua baris rekap (join nama toko & metode), untuk ditampilkan di tabel. idToko/tahun = null berarti tanpa filter itu. */
-    public List<RekapMetodeBaris> findAll(Integer idToko, Integer tahun) throws SQLException {
+    /**
+     * Semua baris rekap (join nama toko & metode), untuk ditampilkan di tabel/laporan.
+     * idToko = null berarti semua toko. tahunDari/tahunSampai = null berarti tanpa batas ke arah itu.
+     */
+    public List<RekapMetodeBaris> findAll(Integer idToko, Integer tahunDari, Integer tahunSampai) throws SQLException {
         StringBuilder sql = new StringBuilder(
                 "SELECT t.kode_toko, t.nama_toko, m.nama_metode, r.tahun, r.bulan, r.jumlah_transaksi " +
                 "FROM rekap_metode_bulanan r " +
@@ -75,8 +114,11 @@ public class RekapMetodeDAO {
         if (idToko != null) {
             sql.append(" AND r.id_toko = ?");
         }
-        if (tahun != null) {
-            sql.append(" AND r.tahun = ?");
+        if (tahunDari != null) {
+            sql.append(" AND r.tahun >= ?");
+        }
+        if (tahunSampai != null) {
+            sql.append(" AND r.tahun <= ?");
         }
         sql.append(" ORDER BY t.kode_toko, r.tahun, r.bulan, m.urutan");
 
@@ -87,8 +129,11 @@ public class RekapMetodeDAO {
             if (idToko != null) {
                 ps.setInt(idx++, idToko);
             }
-            if (tahun != null) {
-                ps.setInt(idx, tahun);
+            if (tahunDari != null) {
+                ps.setInt(idx++, tahunDari);
+            }
+            if (tahunSampai != null) {
+                ps.setInt(idx, tahunSampai);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -104,6 +149,21 @@ public class RekapMetodeDAO {
             }
         }
         return list;
+    }
+
+    /** Jumlah transaksi saat ini untuk satu kombinasi toko x metode x periode (0 jika belum ada baris). */
+    public int getJumlah(int idToko, int idMetode, int tahun, int bulan) throws SQLException {
+        String sql = "SELECT jumlah_transaksi FROM rekap_metode_bulanan WHERE id_toko=? AND id_metode=? AND tahun=? AND bulan=?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idToko);
+            ps.setInt(2, idMetode);
+            ps.setInt(3, tahun);
+            ps.setInt(4, bulan);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
     }
 
     /** Hapus satu baris rekap berdasarkan kode toko + nama metode + periode (dipakai form Kelola manual). */

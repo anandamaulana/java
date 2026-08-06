@@ -52,7 +52,8 @@ public class LaporanForm extends JFrame {
 
     private final JComboBox<Object> cmbToko = new JComboBox<>();
     private final JCheckBox chkSemuaTahun = new JCheckBox("Semua Tahun", true);
-    private final JSpinner spnTahun;
+    private final JSpinner spnTahunDari;
+    private final JSpinner spnTahunSampai;
 
     public LaporanForm(User user) {
         super("Riwayat Hasil Prediksi");
@@ -65,7 +66,8 @@ public class LaporanForm extends JFrame {
             setIconImage(icon);
         }
         int tahunSekarang = LocalDate.now().getYear();
-        spnTahun = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
+        spnTahunDari = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
+        spnTahunSampai = new JSpinner(new SpinnerNumberModel(tahunSekarang, 2000, 2100, 1));
         initUI();
         muatPilihanToko();
         muatData();
@@ -83,11 +85,17 @@ public class LaporanForm extends JFrame {
         JPanel filter = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filter.add(new JLabel("Toko:"));
         filter.add(cmbToko);
-        chkSemuaTahun.addActionListener(e -> spnTahun.setEnabled(!chkSemuaTahun.isSelected()));
-        spnTahun.setEnabled(false);
+        chkSemuaTahun.addActionListener(e -> {
+            spnTahunDari.setEnabled(!chkSemuaTahun.isSelected());
+            spnTahunSampai.setEnabled(!chkSemuaTahun.isSelected());
+        });
+        spnTahunDari.setEnabled(false);
+        spnTahunSampai.setEnabled(false);
         filter.add(chkSemuaTahun);
-        filter.add(new JLabel("Tahun Target:"));
-        filter.add(spnTahun);
+        filter.add(new JLabel("Tahun Target Dari:"));
+        filter.add(spnTahunDari);
+        filter.add(new JLabel("Sampai:"));
+        filter.add(spnTahunSampai);
         JButton btnTampilkan = new JButton("Tampilkan");
         btnTampilkan.addActionListener(e -> muatData());
         filter.add(btnTampilkan);
@@ -132,14 +140,18 @@ public class LaporanForm extends JFrame {
         return (sel instanceof Toko) ? ((Toko) sel).getIdToko() : null;
     }
 
-    private Integer tahunTerpilih() {
-        return chkSemuaTahun.isSelected() ? null : (Integer) spnTahun.getValue();
+    private Integer tahunDariTerpilih() {
+        return chkSemuaTahun.isSelected() ? null : (Integer) spnTahunDari.getValue();
+    }
+
+    private Integer tahunSampaiTerpilih() {
+        return chkSemuaTahun.isSelected() ? null : (Integer) spnTahunSampai.getValue();
     }
 
     private void muatData() {
         tableModel.setRowCount(0);
         try {
-            List<HasilPrediksi> list = prediksiDAO.findRiwayat(idTokoTerpilih(), tahunTerpilih());
+            List<HasilPrediksi> list = prediksiDAO.findRiwayat(idTokoTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
             for (HasilPrediksi h : list) {
                 tableModel.addRow(new Object[]{
                         h.getIdPrediksi(),
@@ -191,11 +203,11 @@ public class LaporanForm extends JFrame {
         }
         Object tokoSel = cmbToko.getSelectedItem();
         String labelToko = (tokoSel instanceof Toko) ? ((Toko) tokoSel).getKodeToko() + " - " + ((Toko) tokoSel).getNamaToko() : "Semua Toko";
-        String labelTahun = chkSemuaTahun.isSelected() ? "Semua Tahun" : String.valueOf(spnTahun.getValue());
-        String filterLabel = "Toko: " + labelToko + " | Tahun Target: " + labelTahun;
+        String labelPeriode = chkSemuaTahun.isSelected() ? "Semua Tahun" : (spnTahunDari.getValue() + " s.d. " + spnTahunSampai.getValue());
+        String filterLabel = "Toko: " + labelToko + " | Periode Target: " + labelPeriode;
 
         try {
-            List<HasilPrediksi> list = prediksiDAO.findRiwayat(idTokoTerpilih(), tahunTerpilih());
+            List<HasilPrediksi> list = prediksiDAO.findRiwayat(idTokoTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
             pdfReportService.exportTabelRiwayat(list, filterLabel, user, target);
             JOptionPane.showMessageDialog(this, "Laporan PDF berhasil dibuat:\n" + target.getAbsolutePath(), "Sukses", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {

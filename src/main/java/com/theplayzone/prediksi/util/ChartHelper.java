@@ -6,8 +6,11 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+
+import java.util.List;
 
 public final class ChartHelper {
 
@@ -48,5 +51,21 @@ public final class ChartHelper {
         );
 
         return chart;
+    }
+
+    /** Grafik batang perbandingan nilai prediksi antar toko -- dipakai fitur Proses Prediksi Serentak. */
+    public static JFreeChart buatChartPerbandingan(List<PrediksiResult> hasilPerToko, String labelPeriode) {
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        for (PrediksiResult r : hasilPerToko) {
+            dataset.addValue(r.getNilaiPrediksi(), "Prediksi Jumlah Transaksi", r.getNamaToko());
+        }
+        return ChartFactory.createBarChart(
+                "Rekapitulasi Prediksi Semua Toko - " + labelPeriode,
+                "Toko",
+                "Prediksi Jumlah Transaksi",
+                dataset,
+                PlotOrientation.VERTICAL,
+                false, true, false
+        );
     }
 }

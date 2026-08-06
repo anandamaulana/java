@@ -55,7 +55,8 @@ CREATE TABLE rekap_metode_bulanan (
     FOREIGN KEY (id_import) REFERENCES import_log(id_import)
 );
 
-CREATE TABLE hasil_prediksi (
+-- Nama tabel log_prediksi mengikuti istilah pada skripsi Bab IV (skenario use case Proses Prediksi).
+CREATE TABLE log_prediksi (
     id_prediksi     INT AUTO_INCREMENT PRIMARY KEY,
     bulan_target    TINYINT NOT NULL,
     tahun_target    SMALLINT NOT NULL,

@@ -15,11 +15,17 @@ public class TokoDAO {
 
     /** Insert toko baru, atau perbarui nama/lokasi jika kode_toko sudah ada. Mengembalikan id_toko. */
     public int upsert(String kodeToko, String namaToko, String lokasiToko) throws SQLException {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return upsert(conn, kodeToko, namaToko, lokasiToko);
+        }
+    }
+
+    /** Sama seperti {@link #upsert(String, String, String)}, memakai Connection eksternal (untuk transaksi atomik). */
+    public int upsert(Connection conn, String kodeToko, String namaToko, String lokasiToko) throws SQLException {
         String sql = "INSERT INTO toko (kode_toko, nama_toko, lokasi_toko) VALUES (?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE nama_toko = VALUES(nama_toko), lokasi_toko = VALUES(lokasi_toko), " +
                 "id_toko = LAST_INSERT_ID(id_toko)";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, kodeToko);
             ps.setString(2, namaToko);
             ps.setString(3, lokasiToko);

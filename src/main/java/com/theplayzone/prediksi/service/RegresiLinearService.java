@@ -23,10 +23,10 @@ public class RegresiLinearService {
     public PrediksiResult prediksi(int bulanTarget, int tahunTarget, Integer idToko) throws SQLException {
         List<OmzetBulanan> historis = rekapMetodeDAO.getTotalTransaksiByBulan(idToko, bulanTarget, tahunTarget);
         int n = historis.size();
-        if (n < 2) {
+        if (n < 3) {
             throw new IllegalStateException("Data historis bulan ini sebelum tahun " + tahunTarget +
-                    " belum cukup untuk regresi (minimal 2 tahun, tersedia: " + n + "). " +
-                    "Lengkapi data lewat menu Import Rekap Toko Bulanan.");
+                    " belum cukup untuk regresi (minimal 3 tahun, tersedia: " + n + "). " +
+                    "Lengkapi data lewat menu Kelola Rekap Transaksi Toko.");
         }
 
         double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;

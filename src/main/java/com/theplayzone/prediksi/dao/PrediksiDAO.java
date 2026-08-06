@@ -15,7 +15,7 @@ import java.util.List;
 public class PrediksiDAO {
 
     public long simpan(PrediksiResult r, int idUser) throws SQLException {
-        String sql = "INSERT INTO hasil_prediksi (bulan_target, tahun_target, id_toko, jumlah_data_n, konstanta_a, " +
+        String sql = "INSERT INTO log_prediksi (bulan_target, tahun_target, id_toko, jumlah_data_n, konstanta_a, " +
                 "koefisien_b, nilai_prediksi, mape_persen, id_user) VALUES (?,?,?,?,?,?,?,?,?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -40,22 +40,28 @@ public class PrediksiDAO {
     }
 
     public List<HasilPrediksi> findRiwayat() throws SQLException {
-        return findRiwayat(null, null);
+        return findRiwayat(null, null, null);
     }
 
-    /** idToko = null berarti semua toko (termasuk hasil agregat Semua Toko). tahunTarget = null berarti semua tahun. */
-    public List<HasilPrediksi> findRiwayat(Integer idToko, Integer tahunTarget) throws SQLException {
+    /**
+     * idToko = null berarti semua toko (termasuk hasil agregat Semua Toko).
+     * tahunDari/tahunSampai = null berarti tanpa batas ke arah itu (mis. tahunDari=null & tahunSampai=2024 berarti "s.d. 2024").
+     */
+    public List<HasilPrediksi> findRiwayat(Integer idToko, Integer tahunDari, Integer tahunSampai) throws SQLException {
         StringBuilder sql = new StringBuilder(
                 "SELECT hp.id_prediksi, hp.bulan_target, hp.tahun_target, hp.id_toko, hp.jumlah_data_n, " +
                 "hp.konstanta_a, hp.koefisien_b, hp.nilai_prediksi, hp.mape_persen, hp.id_user, " +
-                "hp.tanggal_proses, u.nama_lengkap, t.nama_toko FROM hasil_prediksi hp " +
+                "hp.tanggal_proses, u.nama_lengkap, t.nama_toko FROM log_prediksi hp " +
                 "JOIN users u ON u.id_user = hp.id_user " +
                 "LEFT JOIN toko t ON t.id_toko = hp.id_toko WHERE 1=1");
         if (idToko != null) {
             sql.append(" AND hp.id_toko = ?");
         }
-        if (tahunTarget != null) {
-            sql.append(" AND hp.tahun_target = ?");
+        if (tahunDari != null) {
+            sql.append(" AND hp.tahun_target >= ?");
+        }
+        if (tahunSampai != null) {
+            sql.append(" AND hp.tahun_target <= ?");
         }
         sql.append(" ORDER BY hp.tanggal_proses DESC");
 
@@ -66,8 +72,11 @@ public class PrediksiDAO {
             if (idToko != null) {
                 ps.setInt(idx++, idToko);
             }
-            if (tahunTarget != null) {
-                ps.setInt(idx, tahunTarget);
+            if (tahunDari != null) {
+                ps.setInt(idx++, tahunDari);
+            }
+            if (tahunSampai != null) {
+                ps.setInt(idx, tahunSampai);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -94,7 +103,7 @@ public class PrediksiDAO {
     }
 
     public void delete(int idPrediksi) throws SQLException {
-        String sql = "DELETE FROM hasil_prediksi WHERE id_prediksi = ?";
+        String sql = "DELETE FROM log_prediksi WHERE id_prediksi = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idPrediksi);

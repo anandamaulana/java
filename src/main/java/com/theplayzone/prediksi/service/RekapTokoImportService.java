@@ -31,6 +31,10 @@ import java.util.Map;
  * data mulai baris 5 (A = Kode Toko, kolom metode = jumlah transaksi bulan itu).
  * Toko (dicocokkan via Kode Toko) dan Metode Bayar (dicocokkan via nama) harus SUDAH ADA --
  * import lewat menu Kelola Daftar Toko / Kelola Master Metode Bayar terlebih dahulu.
+ *
+ * Seluruh baris (12 sheet bulan) diproses dalam SATU transaksi database: baris dengan kode toko
+ * yang tidak dikenali dicatat sebagai gagal tanpa menghentikan baris lain, tapi jika koneksi
+ * database terputus di tengah proses, seluruh perubahan pada import ini di-rollback.
  */
 public class RekapTokoImportService {
 
@@ -71,13 +75,22 @@ public class RekapTokoImportService {
         }
 
         try (FileInputStream fis = new FileInputStream(file);
-             Workbook workbook = WorkbookFactory.create(fis)) {
-            for (int bulan = 1; bulan <= 12; bulan++) {
-                Sheet sheet = workbook.getSheet(NAMA_BULAN[bulan - 1]);
-                if (sheet == null) {
-                    continue;
+             Workbook workbook = WorkbookFactory.create(fis);
+             Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                for (int bulan = 1; bulan <= 12; bulan++) {
+                    Sheet sheet = workbook.getSheet(NAMA_BULAN[bulan - 1]);
+                    if (sheet == null) {
+                        continue;
+                    }
+                    importSheetBulan(conn, sheet, bulan, tahun, tokoByKode, metodeByNama, idImport, hasil);
                 }
-                importSheetBulan(sheet, bulan, tahun, tokoByKode, metodeByNama, idImport, hasil);
+                conn.commit();
+            } catch (Exception ex) {
+                conn.rollback();
+                updateLogImport(idImport, 0, "gagal");
+                throw new Exception("Import dibatalkan (rollback) karena kesalahan koneksi/database: " + ex.getMessage(), ex);
             }
         }
 
@@ -85,7 +98,7 @@ public class RekapTokoImportService {
         return hasil;
     }
 
-    private void importSheetBulan(Sheet sheet, int bulan, int tahun, Map<String, Integer> tokoByKode,
+    private void importSheetBulan(Connection conn, Sheet sheet, int bulan, int tahun, Map<String, Integer> tokoByKode,
                                    Map<String, Integer> metodeByNama, int idImport, HasilImport hasil) throws SQLException {
         Row headerRow = sheet.getRow(BARIS_HEADER);
         if (headerRow == null) {
@@ -114,16 +127,12 @@ public class RekapTokoImportService {
                         ": kode toko '" + kodeToko + "' belum terdaftar di Kelola Daftar Toko");
                 continue;
             }
-            try {
-                for (Map.Entry<Integer, Integer> entry : kolomKeMetode.entrySet()) {
-                    int jumlah = jumlahSel(row.getCell(entry.getKey()));
-                    rekapMetodeDAO.upsertJumlah(idToko, entry.getValue(), tahun, bulan, jumlah, idImport);
-                }
-                hasil.jumlahBaris++;
-            } catch (Exception ex) {
-                hasil.jumlahGagal++;
-                hasil.pesanGagal.add(NAMA_BULAN[bulan - 1] + " baris " + (row.getRowNum() + 1) + ": " + ex.getMessage());
+            // Kegagalan dari titik ini (mis. koneksi terputus) dianggap fatal -> rollback seluruh import.
+            for (Map.Entry<Integer, Integer> entry : kolomKeMetode.entrySet()) {
+                int jumlah = jumlahSel(row.getCell(entry.getKey()));
+                rekapMetodeDAO.upsertJumlah(conn, idToko, entry.getValue(), tahun, bulan, jumlah, idImport);
             }
+            hasil.jumlahBaris++;
         }
     }
 
