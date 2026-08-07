@@ -14,6 +14,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -67,6 +68,7 @@ public class KelolaUserForm extends JFrame {
         nav.add(btnKembali);
         panel.add(nav, BorderLayout.NORTH);
 
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel formAkun = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -186,22 +188,37 @@ public class KelolaUserForm extends JFrame {
     }
 
     private void hapusUser() {
-        int row = table.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Pilih baris yang ingin dihapus.", "Validasi", JOptionPane.WARNING_MESSAGE);
+        int[] rows = table.getSelectedRows();
+        if (rows.length == 0) {
+            JOptionPane.showMessageDialog(this, "Pilih satu atau lebih baris yang ingin dihapus.", "Validasi", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        int idUser = (int) tableModel.getValueAt(row, 0);
-        if (idUser == adminAktif.getIdUser()) {
-            JOptionPane.showMessageDialog(this, "Tidak bisa menghapus akun yang sedang login.", "Validasi", JOptionPane.WARNING_MESSAGE);
+        int konfirmasi = JOptionPane.showConfirmDialog(this, "Hapus " + rows.length + " akun terpilih?",
+                "Konfirmasi", JOptionPane.YES_NO_OPTION);
+        if (konfirmasi != JOptionPane.YES_OPTION) {
             return;
         }
-        try {
-            userDAO.delete(idUser);
-            bersihkanForm();
-            muatData();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Gagal menghapus: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        int dilewati = 0;
+        int gagal = 0;
+        for (int row : rows) {
+            int idUser = (int) tableModel.getValueAt(row, 0);
+            if (idUser == adminAktif.getIdUser()) {
+                dilewati++;
+                continue;
+            }
+            try {
+                userDAO.delete(idUser);
+            } catch (Exception ex) {
+                gagal++;
+            }
+        }
+        bersihkanForm();
+        muatData();
+        if (dilewati > 0 || gagal > 0) {
+            JOptionPane.showMessageDialog(this,
+                    (dilewati > 0 ? dilewati + " dilewati (akun yang sedang login tidak bisa dihapus). " : "") +
+                            (gagal > 0 ? gagal + " gagal dihapus." : ""),
+                    "Sebagian Tidak Dihapus", JOptionPane.WARNING_MESSAGE);
         }
     }
 }

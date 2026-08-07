@@ -18,9 +18,9 @@ CREATE TABLE import_log (
     nama_file      VARCHAR(255) NOT NULL,
     jumlah_baris   INT NOT NULL DEFAULT 0,
     status         ENUM('sukses','gagal') NOT NULL,
-    id_user        INT NOT NULL,
+    id_user        INT NULL,                   -- NULL = akun pembuat sudah dihapus (histori tetap disimpan)
     tanggal_import TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_user) REFERENCES users(id_user)
+    FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE SET NULL
 );
 
 CREATE TABLE toko (
@@ -39,15 +39,17 @@ CREATE TABLE metode_bayar (
     aktif       BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Rekap jumlah transaksi per toko x metode bayar x bulan, hasil import Rekap_Omzet_Per_Toko_Bulanan.xlsx.
--- Total bulanan per toko (dipakai regresi) dihitung on-the-fly via SUM(jumlah_transaksi).
+-- Rekap jumlah transaksi & total omzet per toko x metode bayar x bulan, hasil entri manual atau import
+-- grid Rekap_Transaksi_Toko_<Tahun>.xlsx / Rekap_Transaksi_Toko_<Bulan>_<Tahun>.xlsx.
+-- Total bulanan per toko (dipakai regresi) dihitung on-the-fly via SUM(total_omzet).
 CREATE TABLE rekap_metode_bulanan (
     id_rekap         BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_toko          INT NOT NULL,
     id_metode        INT NOT NULL,
     tahun            SMALLINT NOT NULL,
     bulan            TINYINT NOT NULL,          -- 1..12
-    jumlah_transaksi INT NOT NULL DEFAULT 0,
+    jumlah_transaksi INT NOT NULL DEFAULT 0,     -- jumlah transaksi (hitungan), diisi manual / import konsolidasi lama / upload detail ledger
+    total_omzet      DECIMAL(18,2) NOT NULL DEFAULT 0, -- nominal omzet Rupiah, diisi manual / upload Rekap_Transaksi_Toko (grid per metode)
     id_import        INT NULL,
     UNIQUE KEY uq_rekap (id_toko, id_metode, tahun, bulan),
     FOREIGN KEY (id_toko) REFERENCES toko(id_toko),
@@ -64,11 +66,11 @@ CREATE TABLE log_prediksi (
     jumlah_data_n   INT NOT NULL,               -- n data historis YoY yang dipakai
     konstanta_a     DECIMAL(18,4) NOT NULL,
     koefisien_b     DECIMAL(18,4) NOT NULL,
-    nilai_prediksi  DECIMAL(18,2) NOT NULL,      -- Y hasil a + bX
+    nilai_prediksi  DECIMAL(18,2) NOT NULL,      -- Y hasil a + bX = prediksi omzet (Rupiah)
     mape_persen     DECIMAL(6,2) NOT NULL,
-    id_user         INT NOT NULL,
+    id_user         INT NULL,                    -- NULL = akun pemroses sudah dihapus (histori tetap disimpan)
     tanggal_proses  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_user) REFERENCES users(id_user),
+    FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE SET NULL,
     FOREIGN KEY (id_toko) REFERENCES toko(id_toko)
 );
 
@@ -103,15 +105,16 @@ INSERT INTO toko (kode_toko, nama_toko, lokasi_toko) VALUES
 ('R 20', 'CIPUTAT', 'TANGERANG SELATAN'),
 ('R 21', 'BEKASI', 'BEKASI');
 
--- Contoh rekap transaksi bulanan (Januari, 3 tahun terakhir, metode Cash & Gopay) agar menu Prediksi bisa langsung dicoba.
--- Ganti/lengkapi dengan data riil via menu Kelola Rekap Transaksi Toko.
-INSERT INTO rekap_metode_bulanan (id_toko, id_metode, tahun, bulan, jumlah_transaksi) VALUES
-(1, 15, 2023, 1, 520), (1, 1, 2023, 1, 180),
-(1, 15, 2024, 1, 560), (1, 1, 2024, 1, 210),
-(1, 15, 2025, 1, 605), (1, 1, 2025, 1, 250),
-(2, 15, 2023, 1, 610), (2, 1, 2023, 1, 200),
-(2, 15, 2024, 1, 645), (2, 1, 2024, 1, 235),
-(2, 15, 2025, 1, 690), (2, 1, 2025, 1, 268),
-(3, 15, 2023, 1, 470), (3, 1, 2023, 1, 150),
-(3, 15, 2024, 1, 505), (3, 1, 2024, 1, 178),
-(3, 15, 2025, 1, 540), (3, 1, 2025, 1, 205);
+-- Contoh rekap transaksi bulanan (Januari, 3 tahun terakhir, metode Cash & Gopay) agar menu Proses Prediksi
+-- Transaksi Omzet bisa langsung dicoba (jumlah_transaksi = hitungan, total_omzet = nominal Rupiah -- regresi
+-- memprediksi total_omzet). Ganti/lengkapi dengan data riil via menu Kelola Rekap Transaksi Toko.
+INSERT INTO rekap_metode_bulanan (id_toko, id_metode, tahun, bulan, jumlah_transaksi, total_omzet) VALUES
+(1, 15, 2023, 1, 520, 26000000), (1, 1, 2023, 1, 180, 9000000),
+(1, 15, 2024, 1, 560, 28000000), (1, 1, 2024, 1, 210, 10500000),
+(1, 15, 2025, 1, 605, 30250000), (1, 1, 2025, 1, 250, 12500000),
+(2, 15, 2023, 1, 610, 30500000), (2, 1, 2023, 1, 200, 10000000),
+(2, 15, 2024, 1, 645, 32250000), (2, 1, 2024, 1, 235, 11750000),
+(2, 15, 2025, 1, 690, 34500000), (2, 1, 2025, 1, 268, 13400000),
+(3, 15, 2023, 1, 470, 23500000), (3, 1, 2023, 1, 150, 7500000),
+(3, 15, 2024, 1, 505, 25250000), (3, 1, 2024, 1, 178, 8900000),
+(3, 15, 2025, 1, 540, 27000000), (3, 1, 2025, 1, 205, 10250000);

@@ -25,7 +25,7 @@ public class MainDashboard extends JFrame {
         super("Dashboard - Prediksi Omzet The Play Zone");
         this.user = user;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(860, 760);
+        setSize(860, 540);
         setLocationRelativeTo(null);
         Image icon = AppIcon.windowIcon();
         if (icon != null) {
@@ -98,10 +98,7 @@ public class MainDashboard extends JFrame {
             grid.add(menuCard("Kelola Master Metode Bayar", "Data master jenis pembayaran (khusus Admin)", () -> new KelolaMasterMetodeBayarForm(user).setVisible(true)));
         }
         grid.add(menuCard("Kelola Rekap Transaksi Toko", "Input/import rekap transaksi bulanan per toko x metode bayar", () -> new KelolaRekapTransaksiTokoForm(user).setVisible(true)));
-        grid.add(menuCard("Proses & Lihat Prediksi Omzet", "Jalankan Regresi Linear untuk bulan/tahun target", () -> new PrediksiForm(user).setVisible(true)));
-        grid.add(menuCard("Proses Prediksi Serentak", "Jalankan Regresi Linear ke semua toko sekaligus (looping otomatis)", () -> new PrediksiSerentakForm(user).setVisible(true)));
-        grid.add(menuCard("Riwayat / Laporan Prediksi", "Lihat seluruh hasil prediksi yang tersimpan", () -> new LaporanForm(user).setVisible(true)));
-        grid.add(menuCard("Visualisasi Grafik Prediksi Omzet", "Lihat ulang grafik tren dari hasil prediksi tersimpan", () -> new VisualisasiGrafikForm(user).setVisible(true)));
+        grid.add(menuCard("Proses Prediksi Transaksi Omzet", "Jalankan Regresi Linear (satu toko, agregat, atau serentak semua toko) + riwayat", () -> new ProsesPrediksiOmzetForm(user).setVisible(true)));
         grid.add(menuCard("Kelola Data Laporan", "Pilih kategori laporan, filter, preview, lalu export PDF", () -> new KelolaDataLaporanForm(user).setVisible(true)));
 
         return wrapper;

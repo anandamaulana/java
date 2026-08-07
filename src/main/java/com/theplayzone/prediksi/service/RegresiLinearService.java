@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Implementasi Regresi Linear Sederhana (Least Square Method) dengan pembanding data musiman
- * (Year-over-Year): X = urutan tahun ke-n untuk bulan yang sama, Y = total transaksi bulan tersebut
+ * (Year-over-Year): X = urutan tahun ke-n untuk bulan yang sama, Y = total omzet Rupiah bulan tersebut
  * (per toko, atau agregat Semua Toko jika idToko null). Y = a + bX, dengan:
  *   b = (n.SUM(XY) - SUM(X).SUM(Y)) / (n.SUM(X^2) - SUM(X)^2)
  *   a = (SUM(Y) - b.SUM(X)) / n
@@ -21,7 +21,7 @@ public class RegresiLinearService {
     private final RekapMetodeDAO rekapMetodeDAO = new RekapMetodeDAO();
 
     public PrediksiResult prediksi(int bulanTarget, int tahunTarget, Integer idToko) throws SQLException {
-        List<OmzetBulanan> historis = rekapMetodeDAO.getTotalTransaksiByBulan(idToko, bulanTarget, tahunTarget);
+        List<OmzetBulanan> historis = rekapMetodeDAO.getTotalOmzetByBulan(idToko, bulanTarget, tahunTarget);
         int n = historis.size();
         if (n < 3) {
             throw new IllegalStateException("Data historis bulan ini sebelum tahun " + tahunTarget +

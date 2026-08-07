@@ -7,7 +7,7 @@ import com.theplayzone.prediksi.dao.TokoDAO;
 import com.theplayzone.prediksi.model.HasilPrediksi;
 import com.theplayzone.prediksi.model.MetodeBayar;
 import com.theplayzone.prediksi.model.PrediksiResult;
-import com.theplayzone.prediksi.model.RekapMetodeBaris;
+import com.theplayzone.prediksi.model.RekapTokoBulanan;
 import com.theplayzone.prediksi.model.Toko;
 import com.theplayzone.prediksi.model.User;
 import com.theplayzone.prediksi.service.PdfReportService;
@@ -235,8 +235,8 @@ public class KelolaDataLaporanForm extends JFrame {
                 pdfReportService.exportTabelMetodeBayar(metodeBayarDAO.findAll(), user, target);
                 break;
             case "Rekap Transaksi Toko": {
-                List<RekapMetodeBaris> data = rekapMetodeDAO.findAll(idTokoTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
-                pdfReportService.exportTabelRekap(data, labelFilterRentang(), user, target);
+                List<RekapTokoBulanan> data = rekapMetodeDAO.findRingkasanBulanan(idTokoTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
+                pdfReportService.exportRingkasanRekap(data, labelFilterRentang(), user, target);
                 break;
             }
             case "Laporan Prediksi (Riwayat)": {
@@ -257,7 +257,7 @@ public class KelolaDataLaporanForm extends JFrame {
             default: {
                 List<Toko> daftarToko = tokoDAO.findAll();
                 List<MetodeBayar> daftarMetode = metodeBayarDAO.findAll();
-                List<RekapMetodeBaris> rekap = rekapMetodeDAO.findAll(idTokoTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
+                List<RekapTokoBulanan> rekap = rekapMetodeDAO.findRingkasanBulanan(idTokoTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
                 List<HasilPrediksi> riwayat = prediksiDAO.findRiwayat(idTokoTerpilih(), tahunDariTerpilih(), tahunSampaiTerpilih());
                 pdfReportService.exportGabungan(daftarToko, daftarMetode, rekap, riwayat, labelFilterRentang(), user, target);
             }

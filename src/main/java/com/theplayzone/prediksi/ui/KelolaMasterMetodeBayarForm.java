@@ -19,6 +19,7 @@ import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
@@ -76,6 +77,7 @@ public class KelolaMasterMetodeBayarForm extends JFrame {
         nav.add(btnKembali);
         panel.add(nav, BorderLayout.NORTH);
 
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel formManual = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -192,20 +194,33 @@ public class KelolaMasterMetodeBayarForm extends JFrame {
     }
 
     private void hapusMetode() {
-        int row = table.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Pilih baris yang ingin dihapus.", "Validasi", JOptionPane.WARNING_MESSAGE);
+        int[] rows = table.getSelectedRows();
+        if (rows.length == 0) {
+            JOptionPane.showMessageDialog(this, "Pilih satu atau lebih baris yang ingin dihapus.", "Validasi", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String nama = (String) tableModel.getValueAt(row, 1);
-        try {
-            Integer idMetode = metodeBayarDAO.findIdByNama(nama);
-            if (idMetode != null) {
-                metodeBayarDAO.delete(idMetode);
+        int konfirmasi = JOptionPane.showConfirmDialog(this, "Hapus " + rows.length + " metode terpilih?",
+                "Konfirmasi", JOptionPane.YES_NO_OPTION);
+        if (konfirmasi != JOptionPane.YES_OPTION) {
+            return;
+        }
+        int gagal = 0;
+        for (int row : rows) {
+            String nama = (String) tableModel.getValueAt(row, 1);
+            try {
+                Integer idMetode = metodeBayarDAO.findIdByNama(nama);
+                if (idMetode != null) {
+                    metodeBayarDAO.delete(idMetode);
+                }
+            } catch (Exception ex) {
+                gagal++;
             }
-            muatData();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Gagal menghapus (kemungkinan metode sudah punya data rekap): " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        bersihkanForm();
+        muatData();
+        if (gagal > 0) {
+            JOptionPane.showMessageDialog(this, gagal + " dari " + rows.length + " gagal dihapus (kemungkinan metode sudah punya data rekap).",
+                    "Sebagian Gagal", JOptionPane.WARNING_MESSAGE);
         }
     }
 

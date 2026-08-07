@@ -22,7 +22,7 @@ public final class ChartHelper {
     }
 
     public static JFreeChart buatChart(PrediksiResult hasil) {
-        XYSeries dataAktual = new XYSeries("Transaksi Aktual (YoY)");
+        XYSeries dataAktual = new XYSeries("Omzet Aktual (YoY)");
         XYSeries garisTren = new XYSeries("Garis Tren Regresi");
 
         for (TitikRegresi titik : hasil.getTitikList()) {
@@ -42,9 +42,9 @@ public final class ChartHelper {
         dataset.addSeries(titikPrediksi);
 
         JFreeChart chart = ChartFactory.createXYLineChart(
-                "Tren & Prediksi Jumlah Transaksi (Regresi Linear)",
+                "Tren & Prediksi Omzet (Regresi Linear)",
                 "Urutan Periode (Tahun ke-n)",
-                "Jumlah Transaksi",
+                "Omzet (Rupiah)",
                 dataset,
                 PlotOrientation.VERTICAL,
                 true, true, false
@@ -53,16 +53,16 @@ public final class ChartHelper {
         return chart;
     }
 
-    /** Grafik batang perbandingan nilai prediksi antar toko -- dipakai fitur Proses Prediksi Serentak. */
+    /** Grafik batang perbandingan nilai prediksi antar toko -- dipakai mode "Serentak" pada Proses Prediksi Transaksi Omzet. */
     public static JFreeChart buatChartPerbandingan(List<PrediksiResult> hasilPerToko, String labelPeriode) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
         for (PrediksiResult r : hasilPerToko) {
-            dataset.addValue(r.getNilaiPrediksi(), "Prediksi Jumlah Transaksi", r.getNamaToko());
+            dataset.addValue(r.getNilaiPrediksi(), "Prediksi Omzet (Rupiah)", r.getNamaToko());
         }
         return ChartFactory.createBarChart(
                 "Rekapitulasi Prediksi Semua Toko - " + labelPeriode,
                 "Toko",
-                "Prediksi Jumlah Transaksi",
+                "Prediksi Omzet (Rupiah)",
                 dataset,
                 PlotOrientation.VERTICAL,
                 false, true, false

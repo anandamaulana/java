@@ -52,7 +52,7 @@ public class PrediksiDAO {
                 "SELECT hp.id_prediksi, hp.bulan_target, hp.tahun_target, hp.id_toko, hp.jumlah_data_n, " +
                 "hp.konstanta_a, hp.koefisien_b, hp.nilai_prediksi, hp.mape_persen, hp.id_user, " +
                 "hp.tanggal_proses, u.nama_lengkap, t.nama_toko FROM log_prediksi hp " +
-                "JOIN users u ON u.id_user = hp.id_user " +
+                "LEFT JOIN users u ON u.id_user = hp.id_user " +
                 "LEFT JOIN toko t ON t.id_toko = hp.id_toko WHERE 1=1");
         if (idToko != null) {
             sql.append(" AND hp.id_toko = ?");
@@ -94,7 +94,8 @@ public class PrediksiDAO {
                     h.setMapePersen(rs.getDouble("mape_persen"));
                     h.setIdUser(rs.getInt("id_user"));
                     h.setTanggalProses(rs.getTimestamp("tanggal_proses").toLocalDateTime());
-                    h.setNamaUser(rs.getString("nama_lengkap"));
+                    String namaUser = rs.getString("nama_lengkap");
+                    h.setNamaUser(namaUser == null ? "(Pengguna Dihapus)" : namaUser);
                     list.add(h);
                 }
             }

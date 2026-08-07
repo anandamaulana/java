@@ -16,7 +16,7 @@ import com.lowagie.text.pdf.PdfWriter;
 import com.theplayzone.prediksi.model.HasilPrediksi;
 import com.theplayzone.prediksi.model.MetodeBayar;
 import com.theplayzone.prediksi.model.PrediksiResult;
-import com.theplayzone.prediksi.model.RekapMetodeBaris;
+import com.theplayzone.prediksi.model.RekapTokoBulanan;
 import com.theplayzone.prediksi.model.Toko;
 import com.theplayzone.prediksi.model.User;
 import org.jfree.chart.JFreeChart;
@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -35,14 +36,14 @@ import java.util.List;
 import java.util.Locale;
 import javax.imageio.ImageIO;
 
-/** Membuat laporan hasil prediksi omzet dalam format PDF (kop logo + area tanda tangan). */
+/** Membuat laporan hasil prediksi omzet dalam format PDF (kop surat resmi The Play Zone + area tanda tangan). */
 public class PdfReportService {
 
     private static final String[] NAMA_BULAN = {
             "Januari", "Februari", "Maret", "April", "Mei", "Juni",
             "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     };
-    private static final String LOGO_PATH = "/Image/theplayzone-logo-putih.png";
+    private static final String KOP_SURAT_PATH = "/Image/kop-surat-theplayzone.jpeg";
     private static final Color KUNING = new Color(0xF7, 0xB1, 0x18);
     private static final Color HITAM = new Color(0x1A, 0x1A, 0x1A);
 
@@ -89,23 +90,27 @@ public class PdfReportService {
                 });
     }
 
-    public void exportTabelRekap(List<RekapMetodeBaris> data, String filterLabel, User user, File target) throws IOException {
+    public void exportRingkasanRekap(List<RekapTokoBulanan> data, String filterLabel, User user, File target) throws IOException {
         buatDokumenTabel(target, "LAPORAN REKAP TRANSAKSI TOKO", filterLabel + " — " + data.size() + " baris", user,
-                new String[]{"Kode Toko", "Nama Toko", "Metode", "Tahun", "Bulan", "Jumlah Transaksi"}, () -> {
+                new String[]{"Kode Toko", "Nama Toko", "Lokasi Toko", "Tahun", "Bulan", "Jumlah Transaksi", "Total Omzet (Rp)"}, () -> {
                     List<String[]> rows = new ArrayList<>();
-                    for (RekapMetodeBaris b : data) {
-                        rows.add(new String[]{b.getKodeToko(), b.getNamaToko(), b.getNamaMetode(),
+                    for (RekapTokoBulanan b : data) {
+                        rows.add(new String[]{b.getKodeToko(), b.getNamaToko(), b.getLokasiToko() == null ? "-" : b.getLokasiToko(),
                                 String.valueOf(b.getTahun()), NAMA_BULAN[b.getBulan() - 1],
-                                String.format(Locale.US, "%,d", b.getJumlahTransaksi())});
+                                String.format(Locale.US, "%,d", b.getJumlahTransaksi()), formatRupiah(b.getTotalOmzet())});
                     }
                     return rows;
                 });
     }
 
+    private static String formatRupiah(BigDecimal nilai) {
+        return "Rp " + String.format(Locale.US, "%,.0f", nilai == null ? BigDecimal.ZERO : nilai);
+    }
+
     public void exportTabelRiwayat(List<HasilPrediksi> data, String filterLabel, User user, File target) throws IOException {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        buatDokumenTabel(target, "LAPORAN HASIL PREDIKSI", filterLabel + " — " + data.size() + " baris", user,
-                new String[]{"Diproses", "Toko", "Target", "n", "a", "b", "Prediksi", "MAPE (%)", "Oleh"}, () -> {
+        buatDokumenTabel(target, "LAPORAN HASIL PREDIKSI TRANSAKSI OMZET", filterLabel + " — " + data.size() + " baris", user,
+                new String[]{"Diproses", "Toko", "Target", "n", "a", "b", "Prediksi Omzet (Rp)", "MAPE (%)", "Oleh"}, () -> {
                     List<String[]> rows = new ArrayList<>();
                     for (HasilPrediksi h : data) {
                         rows.add(new String[]{
@@ -115,7 +120,7 @@ public class PdfReportService {
                                 String.valueOf(h.getJumlahDataN()),
                                 String.format(Locale.US, "%.2f", h.getKonstantaA()),
                                 String.format(Locale.US, "%.2f", h.getKoefisienB()),
-                                String.format(Locale.US, "%,.0f", h.getNilaiPrediksi()),
+                                formatRupiah(BigDecimal.valueOf(h.getNilaiPrediksi())),
                                 String.format(Locale.US, "%.2f", h.getMapePersen()),
                                 h.getNamaUser()
                         });
@@ -125,7 +130,7 @@ public class PdfReportService {
     }
 
     /** Laporan gabungan: Daftar Toko + Master Metode Bayar + Rekap Transaksi + Riwayat Prediksi dalam satu file. */
-    public void exportGabungan(List<Toko> toko, List<MetodeBayar> metode, List<RekapMetodeBaris> rekap,
+    public void exportGabungan(List<Toko> toko, List<MetodeBayar> metode, List<RekapTokoBulanan> rekap,
                                 List<HasilPrediksi> riwayat, String filterLabel, User user, File target) throws IOException {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         Document document = new Document(PageSize.A4, 42, 42, 36, 42);
@@ -154,24 +159,24 @@ public class PdfReportService {
 
             tambahSubJudul(document, "3. Rekap Transaksi Toko (" + rekap.size() + " baris)");
             List<String[]> baris3 = new ArrayList<>();
-            for (RekapMetodeBaris b : rekap) {
-                baris3.add(new String[]{b.getKodeToko(), b.getNamaMetode(), String.valueOf(b.getTahun()),
-                        NAMA_BULAN[b.getBulan() - 1], String.format(Locale.US, "%,d", b.getJumlahTransaksi())});
+            for (RekapTokoBulanan b : rekap) {
+                baris3.add(new String[]{b.getKodeToko(), b.getNamaToko(), String.valueOf(b.getTahun()),
+                        NAMA_BULAN[b.getBulan() - 1], String.format(Locale.US, "%,d", b.getJumlahTransaksi()), formatRupiah(b.getTotalOmzet())});
             }
-            tambahTabelData(document, new String[]{"Kode Toko", "Metode", "Tahun", "Bulan", "Jumlah Transaksi"}, baris3);
+            tambahTabelData(document, new String[]{"Kode Toko", "Nama Toko", "Tahun", "Bulan", "Jumlah Transaksi", "Total Omzet (Rp)"}, baris3);
 
-            tambahSubJudul(document, "4. Riwayat Hasil Prediksi (" + riwayat.size() + " baris)");
+            tambahSubJudul(document, "4. Riwayat Hasil Prediksi Omzet (" + riwayat.size() + " baris)");
             List<String[]> baris4 = new ArrayList<>();
             for (HasilPrediksi h : riwayat) {
                 baris4.add(new String[]{
                         h.getTanggalProses().format(fmt),
                         h.getNamaToko() == null ? "Semua Toko" : h.getNamaToko(),
                         NAMA_BULAN[h.getBulanTarget() - 1] + " " + h.getTahunTarget(),
-                        String.format(Locale.US, "%,.0f", h.getNilaiPrediksi()),
+                        formatRupiah(BigDecimal.valueOf(h.getNilaiPrediksi())),
                         String.format(Locale.US, "%.2f%%", h.getMapePersen())
                 });
             }
-            tambahTabelData(document, new String[]{"Diproses", "Toko", "Target", "Prediksi", "MAPE"}, baris4);
+            tambahTabelData(document, new String[]{"Diproses", "Toko", "Target", "Prediksi Omzet (Rp)", "MAPE"}, baris4);
 
             tambahTandaTangan(document);
             document.close();
@@ -201,11 +206,11 @@ public class PdfReportService {
                         String.valueOf(r.getJumlahDataN()),
                         String.format(Locale.US, "%.2f", r.getKonstantaA()),
                         String.format(Locale.US, "%.2f", r.getKoefisienB()),
-                        String.format(Locale.US, "%,.0f", r.getNilaiPrediksi()),
+                        formatRupiah(BigDecimal.valueOf(r.getNilaiPrediksi())),
                         String.format(Locale.US, "%.2f%%", r.getMapePersen())
                 });
             }
-            tambahTabelData(document, new String[]{"Toko", "n", "a", "b", "Prediksi", "MAPE"}, baris);
+            tambahTabelData(document, new String[]{"Toko", "n", "a", "b", "Prediksi Omzet (Rp)", "MAPE"}, baris);
 
             if (!hasilPerToko.isEmpty()) {
                 JFreeChart chart = com.theplayzone.prediksi.util.ChartHelper.buatChartPerbandingan(hasilPerToko, labelPeriode);
@@ -304,35 +309,28 @@ public class PdfReportService {
     }
 
     private void tambahKop(Document document) throws Exception {
-        PdfPTable kop = new PdfPTable(2);
-        kop.setWidthPercentage(100);
-        kop.setWidths(new float[]{1.2f, 3f});
-
-        PdfPCell selLogo;
-        try (InputStream in = getClass().getResourceAsStream(LOGO_PATH)) {
+        boolean adaKopResmi = false;
+        try (InputStream in = getClass().getResourceAsStream(KOP_SURAT_PATH)) {
             if (in != null) {
-                Image logo = Image.getInstance(in.readAllBytes());
-                logo.scaleToFit(90, 90);
-                selLogo = new PdfPCell(logo, false);
-            } else {
-                selLogo = new PdfPCell(new Phrase(""));
+                Image kopSurat = Image.getInstance(in.readAllBytes());
+                float lebar = document.getPageSize().getWidth() - document.leftMargin() - document.rightMargin();
+                kopSurat.scaleToFit(lebar, 100f);
+                kopSurat.setAlignment(Element.ALIGN_LEFT);
+                document.add(kopSurat);
+                adaKopResmi = true;
             }
         }
-        selLogo.setBorder(0);
-        selLogo.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        kop.addCell(selLogo);
 
-        Font fontNama = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, HITAM);
-        Font fontAlamat = FontFactory.getFont(FontFactory.HELVETICA, 9, Color.DARK_GRAY);
-        Paragraph teks = new Paragraph();
-        teks.add(new Chunk("THE PLAY ZONE\n", fontNama));
-        teks.add(new Chunk("Sistem Prediksi Omzet - Metode Regresi Linear\n", fontAlamat));
-        PdfPCell selTeks = new PdfPCell(teks);
-        selTeks.setBorder(0);
-        selTeks.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        kop.addCell(selTeks);
+        if (!adaKopResmi) {
+            // Fallback jika gambar kop surat resmi tidak ditemukan di resources.
+            Font fontNama = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, HITAM);
+            document.add(new Paragraph("THE PLAY ZONE", fontNama));
+        }
 
-        document.add(kop);
+        Font fontSistem = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 8.5f, Color.DARK_GRAY);
+        Paragraph sistem = new Paragraph("Sistem Prediksi Omzet - Metode Regresi Linear", fontSistem);
+        sistem.setSpacingBefore(4f);
+        document.add(sistem);
 
         PdfPTable garis = new PdfPTable(1);
         garis.setWidthPercentage(100);
@@ -341,13 +339,14 @@ public class PdfReportService {
         selGaris.setBackgroundColor(KUNING);
         selGaris.setBorder(0);
         garis.addCell(selGaris);
+        garis.setSpacingBefore(6f);
         garis.setSpacingAfter(14f);
         document.add(garis);
     }
 
     private void tambahJudul(Document document, PrediksiResult hasil) throws Exception {
         Font fontJudul = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, HITAM);
-        Paragraph judul = new Paragraph("LAPORAN HASIL PREDIKSI TRANSAKSI", fontJudul);
+        Paragraph judul = new Paragraph("LAPORAN HASIL PREDIKSI TRANSAKSI OMZET", fontJudul);
         judul.setAlignment(Element.ALIGN_CENTER);
         document.add(judul);
 
@@ -386,7 +385,7 @@ public class PdfReportService {
         baris(table, "Koefisien (b)", String.format(Locale.US, "%.4f", hasil.getKoefisienB()), fontLabel, fontValue);
         baris(table, "Persamaan Regresi", "Y = " + String.format(Locale.US, "%.2f", hasil.getKonstantaA())
                 + " + " + String.format(Locale.US, "%.2f", hasil.getKoefisienB()) + " * X", fontLabel, fontValue);
-        baris(table, "Prediksi Jumlah Transaksi", String.format(Locale.US, "%,.0f", hasil.getNilaiPrediksi()), fontLabel, fontValue);
+        baris(table, "Prediksi Omzet (Rupiah)", formatRupiah(BigDecimal.valueOf(hasil.getNilaiPrediksi())), fontLabel, fontValue);
         baris(table, "MAPE (Tingkat Error)", String.format(Locale.US, "%.2f%%", hasil.getMapePersen()), fontLabel, fontValue);
 
         document.add(table);

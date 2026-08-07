@@ -17,6 +17,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
@@ -71,6 +72,7 @@ public class KelolaDaftarTokoForm extends JFrame {
         nav.add(btnKembali);
         panel.add(nav, BorderLayout.NORTH);
 
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel formManual = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -181,20 +183,33 @@ public class KelolaDaftarTokoForm extends JFrame {
     }
 
     private void hapusToko() {
-        int row = table.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Pilih baris yang ingin dihapus.", "Validasi", JOptionPane.WARNING_MESSAGE);
+        int[] rows = table.getSelectedRows();
+        if (rows.length == 0) {
+            JOptionPane.showMessageDialog(this, "Pilih satu atau lebih baris yang ingin dihapus.", "Validasi", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String kode = (String) tableModel.getValueAt(row, 0);
-        try {
-            Integer idToko = tokoDAO.findIdByKode(kode);
-            if (idToko != null) {
-                tokoDAO.delete(idToko);
+        int konfirmasi = JOptionPane.showConfirmDialog(this, "Hapus " + rows.length + " toko terpilih?",
+                "Konfirmasi", JOptionPane.YES_NO_OPTION);
+        if (konfirmasi != JOptionPane.YES_OPTION) {
+            return;
+        }
+        int gagal = 0;
+        for (int row : rows) {
+            String kode = (String) tableModel.getValueAt(row, 0);
+            try {
+                Integer idToko = tokoDAO.findIdByKode(kode);
+                if (idToko != null) {
+                    tokoDAO.delete(idToko);
+                }
+            } catch (Exception ex) {
+                gagal++;
             }
-            muatData();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Gagal menghapus (kemungkinan toko sudah punya data rekap/prediksi): " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        bersihkanForm();
+        muatData();
+        if (gagal > 0) {
+            JOptionPane.showMessageDialog(this, gagal + " dari " + rows.length + " gagal dihapus (kemungkinan toko sudah punya data rekap/prediksi).",
+                    "Sebagian Gagal", JOptionPane.WARNING_MESSAGE);
         }
     }
 

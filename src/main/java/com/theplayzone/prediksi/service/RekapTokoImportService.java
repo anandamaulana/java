@@ -15,6 +15,7 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,19 +27,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Import rekap transaksi bulanan dari sheet per bulan ("Januari".."Desember") pada file
- * Rekap_Omzet_Per_Toko_Bulanan.xlsx. Header baris 4 (nama metode bayar per kolom mulai C),
- * data mulai baris 5 (A = Kode Toko, kolom metode = jumlah transaksi bulan itu).
- * Toko (dicocokkan via Kode Toko) dan Metode Bayar (dicocokkan via nama) harus SUDAH ADA --
- * import lewat menu Kelola Daftar Toko / Kelola Master Metode Bayar terlebih dahulu.
+ * Import rekap transaksi bulanan dari grid "Rekap_Transaksi_Toko" -- baris = toko (kolom A = Kode Toko,
+ * kolom B = Nama Toko, diabaikan), kolom = metode bayar (header baris pertama, mis. Gopay/OVO/Dana/Cash),
+ * nilai sel = nominal omzet Rupiah toko itu lewat metode itu bulan itu. Toko (via Kode Toko) dan Metode
+ * Bayar (via nama kolom) harus SUDAH ADA -- lengkapi lewat menu Kelola Daftar Toko / Kelola Master Metode
+ * Bayar dahulu.
  *
- * Seluruh baris (12 sheet bulan) diproses dalam SATU transaksi database: baris dengan kode toko
- * yang tidak dikenali dicatat sebagai gagal tanpa menghentikan baris lain, tapi jika koneksi
- * database terputus di tengah proses, seluruh perubahan pada import ini di-rollback.
+ * Dua varian file:
+ *  - importTahunan: Rekap_Transaksi_Toko_&lt;Tahun&gt;.xlsx, 12 sheet (satu per bulan, nama sheet memuat
+ *    nama bulan mis. "Januari 2023" / "September_2023" -- dicocokkan dengan "startsWith" nama bulan agar
+ *    tahan terhadap variasi spasi/underscore/tahun pada nama sheet).
+ *  - importBulanan: Rekap_Transaksi_Toko_&lt;Bulan&gt;_&lt;Tahun&gt;.xlsx, 1 sheet, bulan &amp; tahun target
+ *    dipilih manual di form (nama/isi sheet tidak perlu cocok apa pun).
+ *
+ * Nilai omzet DIAKUMULASI (ditambahkan ke yang sudah tercatat, bukan ditimpa) mengikuti istilah
+ * "mengakumulasi total pendapatan (omzet) bulanan" pada skripsi Bab IV Tabel 4.8. Baris dengan kode toko
+ * yang tidak dikenal dicatat gagal tanpa menghentikan baris lain, tapi jika koneksi database terputus di
+ * tengah proses, seluruh perubahan pada import ini di-rollback.
  */
 public class RekapTokoImportService {
 
-    private static final int BARIS_HEADER = 3; // 0-based, baris ke-4
+    private static final int BARIS_HEADER = 0; // 0-based, baris pertama (header: Kode_Toko, Nama_Toko, <metode...>)
     private static final String[] NAMA_BULAN = {
             "Januari", "Februari", "Maret", "April", "Mei", "Juni",
             "Juli", "Agustus", "September", "Oktober", "November", "Desember"
@@ -54,25 +63,12 @@ public class RekapTokoImportService {
         public final List<String> pesanGagal = new ArrayList<>();
     }
 
-    public HasilImport importFile(File file, int tahun, int idUser) throws Exception {
+    /** Import file tahunan (12 sheet bulan sekaligus). */
+    public HasilImport importTahunan(File file, int tahun, int idUser) throws Exception {
         int idImport = buatLogImport(file.getName(), idUser);
         HasilImport hasil = new HasilImport();
-
-        Map<String, Integer> metodeByNama = new HashMap<>();
-        for (MetodeBayar m : metodeBayarDAO.findAll()) {
-            metodeByNama.put(m.getNamaMetode().trim().toLowerCase(), m.getIdMetode());
-        }
-        if (metodeByNama.isEmpty()) {
-            throw new IllegalStateException("Master Metode Bayar masih kosong. Import lewat menu Kelola Master Metode Bayar dahulu.");
-        }
-
-        Map<String, Integer> tokoByKode = new HashMap<>();
-        for (Toko t : tokoDAO.findAll()) {
-            tokoByKode.put(t.getKodeToko(), t.getIdToko());
-        }
-        if (tokoByKode.isEmpty()) {
-            throw new IllegalStateException("Daftar Toko masih kosong. Import lewat menu Kelola Daftar Toko dahulu.");
-        }
+        Map<String, Integer> metodeByNama = muatMetodeByNama();
+        Map<String, Integer> tokoByKode = muatTokoByKode();
 
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis);
@@ -80,11 +76,11 @@ public class RekapTokoImportService {
             conn.setAutoCommit(false);
             try {
                 for (int bulan = 1; bulan <= 12; bulan++) {
-                    Sheet sheet = workbook.getSheet(NAMA_BULAN[bulan - 1]);
+                    Sheet sheet = cariSheetBulan(workbook, bulan);
                     if (sheet == null) {
                         continue;
                     }
-                    importSheetBulan(conn, sheet, bulan, tahun, tokoByKode, metodeByNama, idImport, hasil);
+                    importSheetGrid(conn, sheet, bulan, tahun, tokoByKode, metodeByNama, idImport, hasil);
                 }
                 conn.commit();
             } catch (Exception ex) {
@@ -98,8 +94,71 @@ public class RekapTokoImportService {
         return hasil;
     }
 
-    private void importSheetBulan(Connection conn, Sheet sheet, int bulan, int tahun, Map<String, Integer> tokoByKode,
-                                   Map<String, Integer> metodeByNama, int idImport, HasilImport hasil) throws SQLException {
+    /** Import file satu bulan (1 sheet, bulan/tahun target ditentukan manual di form). */
+    public HasilImport importBulanan(File file, int bulan, int tahun, int idUser) throws Exception {
+        int idImport = buatLogImport(file.getName(), idUser);
+        HasilImport hasil = new HasilImport();
+        Map<String, Integer> metodeByNama = muatMetodeByNama();
+        Map<String, Integer> tokoByKode = muatTokoByKode();
+
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook workbook = WorkbookFactory.create(fis);
+             Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Sheet sheet = workbook.getNumberOfSheets() > 0 ? workbook.getSheetAt(0) : null;
+                if (sheet == null) {
+                    throw new IllegalStateException("File Excel tidak memiliki sheet.");
+                }
+                importSheetGrid(conn, sheet, bulan, tahun, tokoByKode, metodeByNama, idImport, hasil);
+                conn.commit();
+            } catch (Exception ex) {
+                conn.rollback();
+                updateLogImport(idImport, 0, "gagal");
+                throw new Exception("Import dibatalkan (rollback) karena kesalahan koneksi/database: " + ex.getMessage(), ex);
+            }
+        }
+
+        updateLogImport(idImport, hasil.jumlahBaris, hasil.jumlahBaris > 0 ? "sukses" : "gagal");
+        return hasil;
+    }
+
+    private Map<String, Integer> muatMetodeByNama() throws SQLException {
+        Map<String, Integer> metodeByNama = new HashMap<>();
+        for (MetodeBayar m : metodeBayarDAO.findAll()) {
+            metodeByNama.put(m.getNamaMetode().trim().toLowerCase(), m.getIdMetode());
+        }
+        if (metodeByNama.isEmpty()) {
+            throw new IllegalStateException("Master Metode Bayar masih kosong. Import lewat menu Kelola Master Metode Bayar dahulu.");
+        }
+        return metodeByNama;
+    }
+
+    private Map<String, Integer> muatTokoByKode() throws SQLException {
+        Map<String, Integer> tokoByKode = new HashMap<>();
+        for (Toko t : tokoDAO.findAll()) {
+            tokoByKode.put(t.getKodeToko(), t.getIdToko());
+        }
+        if (tokoByKode.isEmpty()) {
+            throw new IllegalStateException("Daftar Toko masih kosong. Import lewat menu Kelola Daftar Toko dahulu.");
+        }
+        return tokoByKode;
+    }
+
+    /** Cari sheet yang namanya diawali nama bulan (case-insensitive), tahan variasi "Januari 2023" / "Januari_2023". */
+    private Sheet cariSheetBulan(Workbook workbook, int bulan) {
+        String target = NAMA_BULAN[bulan - 1].toLowerCase();
+        for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+            Sheet sheet = workbook.getSheetAt(i);
+            if (sheet.getSheetName().trim().toLowerCase().startsWith(target)) {
+                return sheet;
+            }
+        }
+        return null;
+    }
+
+    private void importSheetGrid(Connection conn, Sheet sheet, int bulan, int tahun, Map<String, Integer> tokoByKode,
+                                  Map<String, Integer> metodeByNama, int idImport, HasilImport hasil) throws SQLException {
         Row headerRow = sheet.getRow(BARIS_HEADER);
         if (headerRow == null) {
             return;
@@ -129,8 +188,11 @@ public class RekapTokoImportService {
             }
             // Kegagalan dari titik ini (mis. koneksi terputus) dianggap fatal -> rollback seluruh import.
             for (Map.Entry<Integer, Integer> entry : kolomKeMetode.entrySet()) {
-                int jumlah = jumlahSel(row.getCell(entry.getKey()));
-                rekapMetodeDAO.upsertJumlah(conn, idToko, entry.getValue(), tahun, bulan, jumlah, idImport);
+                BigDecimal nominal = nominalSel(row.getCell(entry.getKey()));
+                if (nominal.signum() == 0) {
+                    continue;
+                }
+                rekapMetodeDAO.tambahOmzet(conn, idToko, entry.getValue(), tahun, bulan, nominal, idImport);
             }
             hasil.jumlahBaris++;
         }
@@ -140,21 +202,21 @@ public class RekapTokoImportService {
         return cell == null ? "" : cell.toString().trim();
     }
 
-    private int jumlahSel(Cell cell) {
+    private BigDecimal nominalSel(Cell cell) {
         if (cell == null) {
-            return 0;
+            return BigDecimal.ZERO;
         }
         if (cell.getCellType() == CellType.NUMERIC) {
-            return (int) cell.getNumericCellValue();
+            return BigDecimal.valueOf(cell.getNumericCellValue());
         }
         String raw = cell.toString().trim();
         if (raw.isEmpty()) {
-            return 0;
+            return BigDecimal.ZERO;
         }
         try {
-            return (int) Double.parseDouble(raw);
+            return new BigDecimal(raw);
         } catch (NumberFormatException ex) {
-            return 0;
+            return BigDecimal.ZERO;
         }
     }
 

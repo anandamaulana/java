@@ -73,6 +73,10 @@ public class UserDAO {
         }
     }
 
+    /**
+     * Hapus akun. Riwayat import_log/log_prediksi milik akun ini TIDAK ikut terhapus (id_user pada
+     * baris lama menjadi NULL lewat ON DELETE SET NULL) -- lihat db/migration_005_user_delete_dan_total_omzet.sql.
+     */
     public void delete(int idUser) throws SQLException {
         String sql = "DELETE FROM users WHERE id_user = ?";
         try (Connection conn = DatabaseConnection.getConnection();

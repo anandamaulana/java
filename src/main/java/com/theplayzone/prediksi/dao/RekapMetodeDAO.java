@@ -2,7 +2,7 @@ package com.theplayzone.prediksi.dao;
 
 import com.theplayzone.prediksi.koneksi.DatabaseConnection;
 import com.theplayzone.prediksi.model.OmzetBulanan;
-import com.theplayzone.prediksi.model.RekapMetodeBaris;
+import com.theplayzone.prediksi.model.RekapTokoBulanan;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -12,7 +12,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Akses data rekap_metode_bulanan (hasil import Rekap_Omzet_Per_Toko_Bulanan.xlsx). */
+/** Akses data rekap_metode_bulanan: jumlah_transaksi (hitungan) & total_omzet (Rupiah) per toko x metode x bulan. */
 public class RekapMetodeDAO {
 
     /** Insert/update (timpa) jumlah transaksi satu toko x metode x periode -- dipakai import rekap konsolidasi. */
@@ -71,13 +71,62 @@ public class RekapMetodeDAO {
         }
     }
 
+    /** Insert/update (timpa) nominal omzet Rupiah satu toko x metode x periode -- dipakai form entri manual. */
+    public void upsertOmzet(int idToko, int idMetode, int tahun, int bulan, BigDecimal nominal, Integer idImport) throws SQLException {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            upsertOmzet(conn, idToko, idMetode, tahun, bulan, nominal, idImport);
+        }
+    }
+
+    /** Sama seperti {@link #upsertOmzet(int, int, int, int, BigDecimal, Integer)}, memakai Connection eksternal. */
+    public void upsertOmzet(Connection conn, int idToko, int idMetode, int tahun, int bulan, BigDecimal nominal, Integer idImport) throws SQLException {
+        String sql = "INSERT INTO rekap_metode_bulanan (id_toko, id_metode, tahun, bulan, total_omzet, id_import) " +
+                "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE total_omzet = VALUES(total_omzet), id_import = VALUES(id_import)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idToko);
+            ps.setInt(2, idMetode);
+            ps.setInt(3, tahun);
+            ps.setInt(4, bulan);
+            ps.setBigDecimal(5, nominal);
+            if (idImport == null) {
+                ps.setNull(6, java.sql.Types.INTEGER);
+            } else {
+                ps.setInt(6, idImport);
+            }
+            ps.executeUpdate();
+        }
+    }
+
     /**
-     * Total transaksi (semua metode dijumlahkan) per tahun, untuk bulan tertentu, sebelum tahunBatas.
-     * idToko = null berarti agregat Semua Toko. Dipakai sebagai data historis Year-over-Year oleh RegresiLinearService
-     * (nilai dititipkan di field totalOmzet milik OmzetBulanan, walau isinya jumlah transaksi -- bukan nominal Rupiah).
+     * Insert, atau AKUMULASI (tambahkan ke nilai yang sudah ada) nominal omzet Rupiah jika kombinasi
+     * toko x metode x periode sudah ada -- dipakai upload grid Rekap_Transaksi_Toko (mengikuti istilah
+     * "mengakumulasi total pendapatan (omzet) bulanan" pada skripsi Bab IV Tabel 4.8).
      */
-    public List<OmzetBulanan> getTotalTransaksiByBulan(Integer idToko, int bulan, int tahunBatas) throws SQLException {
-        String sql = "SELECT tahun, SUM(jumlah_transaksi) AS total FROM rekap_metode_bulanan " +
+    public void tambahOmzet(Connection conn, int idToko, int idMetode, int tahun, int bulan, BigDecimal nominal, Integer idImport) throws SQLException {
+        String sql = "INSERT INTO rekap_metode_bulanan (id_toko, id_metode, tahun, bulan, total_omzet, id_import) " +
+                "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE total_omzet = total_omzet + VALUES(total_omzet), id_import = VALUES(id_import)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idToko);
+            ps.setInt(2, idMetode);
+            ps.setInt(3, tahun);
+            ps.setInt(4, bulan);
+            ps.setBigDecimal(5, nominal);
+            if (idImport == null) {
+                ps.setNull(6, java.sql.Types.INTEGER);
+            } else {
+                ps.setInt(6, idImport);
+            }
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Total omzet Rupiah (semua metode dijumlahkan) per tahun, untuk bulan tertentu, sebelum tahunBatas.
+     * idToko = null berarti agregat Semua Toko. Dipakai sebagai data historis Year-over-Year oleh
+     * RegresiLinearService untuk memprediksi omzet (bukan jumlah transaksi).
+     */
+    public List<OmzetBulanan> getTotalOmzetByBulan(Integer idToko, int bulan, int tahunBatas) throws SQLException {
+        String sql = "SELECT tahun, SUM(total_omzet) AS total FROM rekap_metode_bulanan " +
                 "WHERE bulan = ? AND tahun < ?" + (idToko != null ? " AND id_toko = ?" : "") +
                 " GROUP BY tahun ORDER BY tahun ASC";
         List<OmzetBulanan> list = new ArrayList<>();
@@ -93,7 +142,8 @@ public class RekapMetodeDAO {
                     OmzetBulanan o = new OmzetBulanan();
                     o.setTahun(rs.getInt("tahun"));
                     o.setBulan(bulan);
-                    o.setTotalOmzet(BigDecimal.valueOf(rs.getLong("total")));
+                    BigDecimal total = rs.getBigDecimal("total");
+                    o.setTotalOmzet(total == null ? BigDecimal.ZERO : total);
                     list.add(o);
                 }
             }
@@ -102,15 +152,16 @@ public class RekapMetodeDAO {
     }
 
     /**
-     * Semua baris rekap (join nama toko & metode), untuk ditampilkan di tabel/laporan.
+     * Ringkasan per toko x bulan (semua metode dijumlahkan): kode/nama/lokasi toko, periode,
+     * total jumlah transaksi, dan total omzet Rupiah. Dipakai tabel & laporan PDF Rekap Transaksi Toko.
      * idToko = null berarti semua toko. tahunDari/tahunSampai = null berarti tanpa batas ke arah itu.
      */
-    public List<RekapMetodeBaris> findAll(Integer idToko, Integer tahunDari, Integer tahunSampai) throws SQLException {
+    public List<RekapTokoBulanan> findRingkasanBulanan(Integer idToko, Integer tahunDari, Integer tahunSampai) throws SQLException {
         StringBuilder sql = new StringBuilder(
-                "SELECT t.kode_toko, t.nama_toko, m.nama_metode, r.tahun, r.bulan, r.jumlah_transaksi " +
+                "SELECT t.kode_toko, t.nama_toko, t.lokasi_toko, r.tahun, r.bulan, " +
+                "SUM(r.jumlah_transaksi) AS total_jumlah, SUM(r.total_omzet) AS total_omzet " +
                 "FROM rekap_metode_bulanan r " +
-                "JOIN toko t ON t.id_toko = r.id_toko " +
-                "JOIN metode_bayar m ON m.id_metode = r.id_metode WHERE 1=1");
+                "JOIN toko t ON t.id_toko = r.id_toko WHERE 1=1");
         if (idToko != null) {
             sql.append(" AND r.id_toko = ?");
         }
@@ -120,9 +171,9 @@ public class RekapMetodeDAO {
         if (tahunSampai != null) {
             sql.append(" AND r.tahun <= ?");
         }
-        sql.append(" ORDER BY t.kode_toko, r.tahun, r.bulan, m.urutan");
+        sql.append(" GROUP BY t.kode_toko, t.nama_toko, t.lokasi_toko, r.tahun, r.bulan ORDER BY t.kode_toko, r.tahun, r.bulan");
 
-        List<RekapMetodeBaris> list = new ArrayList<>();
+        List<RekapTokoBulanan> list = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             int idx = 1;
@@ -137,13 +188,15 @@ public class RekapMetodeDAO {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    RekapMetodeBaris b = new RekapMetodeBaris();
+                    RekapTokoBulanan b = new RekapTokoBulanan();
                     b.setKodeToko(rs.getString("kode_toko"));
                     b.setNamaToko(rs.getString("nama_toko"));
-                    b.setNamaMetode(rs.getString("nama_metode"));
+                    b.setLokasiToko(rs.getString("lokasi_toko"));
                     b.setTahun(rs.getInt("tahun"));
                     b.setBulan(rs.getInt("bulan"));
-                    b.setJumlahTransaksi(rs.getInt("jumlah_transaksi"));
+                    b.setJumlahTransaksi(rs.getInt("total_jumlah"));
+                    BigDecimal totalOmzet = rs.getBigDecimal("total_omzet");
+                    b.setTotalOmzet(totalOmzet == null ? BigDecimal.ZERO : totalOmzet);
                     list.add(b);
                 }
             }
@@ -166,18 +219,16 @@ public class RekapMetodeDAO {
         }
     }
 
-    /** Hapus satu baris rekap berdasarkan kode toko + nama metode + periode (dipakai form Kelola manual). */
-    public void delete(String kodeToko, String namaMetode, int tahun, int bulan) throws SQLException {
+    /** Hapus SEMUA baris rekap (semua metode) milik satu toko x periode -- dipakai "Hapus Terpilih" pada tabel ringkasan. */
+    public void deleteByTokoPeriode(String kodeToko, int tahun, int bulan) throws SQLException {
         String sql = "DELETE r FROM rekap_metode_bulanan r " +
                 "JOIN toko t ON t.id_toko = r.id_toko " +
-                "JOIN metode_bayar m ON m.id_metode = r.id_metode " +
-                "WHERE t.kode_toko = ? AND m.nama_metode = ? AND r.tahun = ? AND r.bulan = ?";
+                "WHERE t.kode_toko = ? AND r.tahun = ? AND r.bulan = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, kodeToko);
-            ps.setString(2, namaMetode);
-            ps.setInt(3, tahun);
-            ps.setInt(4, bulan);
+            ps.setInt(2, tahun);
+            ps.setInt(3, bulan);
             ps.executeUpdate();
         }
     }
