@@ -10,6 +10,7 @@ import com.theplayzone.prediksi.model.User;
 import com.theplayzone.prediksi.service.DetailTransaksiTokoImportService;
 import com.theplayzone.prediksi.service.PdfReportService;
 import com.theplayzone.prediksi.service.RekapTokoImportService;
+import com.theplayzone.prediksi.service.RekapTokoTemplateService;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -51,6 +52,7 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
     private final MetodeBayarDAO metodeBayarDAO = new MetodeBayarDAO();
     private final RekapMetodeDAO rekapMetodeDAO = new RekapMetodeDAO();
     private final PdfReportService pdfReportService = new PdfReportService();
+    private final RekapTokoTemplateService templateService = new RekapTokoTemplateService();
 
     private final DefaultTableModel tableModel = new DefaultTableModel(
             new Object[]{"Kode Toko", "Nama Toko", "Lokasi Toko", "Tahun", "Bulan", "Jumlah Transaksi", "Total Omzet (Rp)"}, 0) {
@@ -217,6 +219,9 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         JButton btnImportTahunan = new JButton("Import Tahunan");
         btnImportTahunan.addActionListener(e -> doImportTahunan());
         tahunan.add(btnImportTahunan);
+        JButton btnContohTahunan = new JButton("Unduh Contoh Format (Tahunan)");
+        btnContohTahunan.addActionListener(e -> unduhContohTahunan());
+        tahunan.add(btnContohTahunan);
 
         JPanel bulanan = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton btnPilihBulanan = new JButton("Pilih Rekap_Transaksi_Toko_<Bulan>_<Tahun>.xlsx");
@@ -238,6 +243,9 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         JButton btnImportBulanan = new JButton("Import Bulanan");
         btnImportBulanan.addActionListener(e -> doImportBulanan());
         bulanan.add(btnImportBulanan);
+        JButton btnContohBulanan = new JButton("Unduh Contoh Format (Bulanan)");
+        btnContohBulanan.addActionListener(e -> unduhContohBulanan());
+        bulanan.add(btnContohBulanan);
 
         wrap.add(tahunan);
         wrap.add(bulanan);
@@ -433,6 +441,61 @@ public class KelolaRekapTransaksiTokoForm extends JFrame {
         }
         if (hasil.pesanGagal.size() > tampil) {
             logArea.append("  - ... dan " + (hasil.pesanGagal.size() - tampil) + " baris gagal lainnya\n");
+        }
+    }
+
+    private void unduhContohTahunan() {
+        int tahun = (Integer) spnTahunImportTahunan.getValue();
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("Contoh_Rekap_Transaksi_Toko_" + tahun + ".xlsx"));
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File target = chooser.getSelectedFile();
+        if (!target.getName().toLowerCase().endsWith(".xlsx")) {
+            target = new File(target.getParentFile(), target.getName() + ".xlsx");
+        }
+        try {
+            List<Toko> daftarToko = tokoDAO.findAll();
+            List<MetodeBayar> daftarMetode = metodeBayarDAO.findAll();
+            if (daftarToko.isEmpty() || daftarMetode.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Daftar Toko atau Master Metode Bayar masih kosong -- lengkapi dulu supaya contoh format terisi kode/nama toko dan kolom metode.", "Validasi", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            templateService.buatTemplateTahunan(daftarToko, daftarMetode, tahun, target);
+            JOptionPane.showMessageDialog(this, "Contoh format Excel (12 sheet bulan) berhasil dibuat:\n" + target.getAbsolutePath() +
+                    "\n\nIsi nominal omzet Rupiah per metode pada tiap sheet bulan, lalu import kembali lewat tombol Import Tahunan.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Gagal membuat contoh format: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void unduhContohBulanan() {
+        int bulan = cmbBulanImportBulanan.getSelectedIndex() + 1;
+        int tahun = (Integer) spnTahunImportBulanan.getValue();
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("Contoh_Rekap_Transaksi_Toko_" + NAMA_BULAN[bulan - 1] + "_" + tahun + ".xlsx"));
+        chooser.setFileFilter(new FileNameExtensionFilter("Excel Files (*.xlsx)", "xlsx"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File target = chooser.getSelectedFile();
+        if (!target.getName().toLowerCase().endsWith(".xlsx")) {
+            target = new File(target.getParentFile(), target.getName() + ".xlsx");
+        }
+        try {
+            List<Toko> daftarToko = tokoDAO.findAll();
+            List<MetodeBayar> daftarMetode = metodeBayarDAO.findAll();
+            if (daftarToko.isEmpty() || daftarMetode.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Daftar Toko atau Master Metode Bayar masih kosong -- lengkapi dulu supaya contoh format terisi kode/nama toko dan kolom metode.", "Validasi", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            templateService.buatTemplateBulanan(daftarToko, daftarMetode, bulan, tahun, target);
+            JOptionPane.showMessageDialog(this, "Contoh format Excel berhasil dibuat:\n" + target.getAbsolutePath() +
+                    "\n\nIsi nominal omzet Rupiah per metode, lalu import kembali lewat tombol Import Bulanan.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Gagal membuat contoh format: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
